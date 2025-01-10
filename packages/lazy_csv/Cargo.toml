@@ -1,0 +1,8 @@
+[package]
+name = "lazy_csv"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+memchr = "2.7.4"
+bumpalo = { optional = true, version = "3", features = ["collections"] }
