@@ -136,7 +136,7 @@ impl<'a> Cell<'a> {
     pub fn try_as_str(&self) -> Result<Cow<'a, str>, std::str::Utf8Error> {
         std::str::from_utf8(self.buf).map(|s| {
             if self.quoted {
-                Cow::Owned(s[1..s.len() - 1].replace("\"\"", "\""))
+                Cow::Owned(s.replace("\"\"", "\""))
             } else {
                 Cow::Borrowed(s)
             }
