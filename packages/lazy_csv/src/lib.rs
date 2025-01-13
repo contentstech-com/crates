@@ -119,20 +119,12 @@ impl<'a, const COLS: usize> Iterator for CsvRowIter<'a, COLS> {
 
 #[derive(Debug, Clone, Eq)]
 pub struct Cell<'a> {
-    buf: &'a [u8],
-    quoted: bool,
-    row: usize,
+    pub buf: &'a [u8],
+    pub quoted: bool,
+    pub row: usize,
 }
 
 impl<'a> Cell<'a> {
-    pub fn buf(&self) -> &'a [u8] {
-        self.buf
-    }
-
-    pub fn row(&self) -> usize {
-        self.row
-    }
-
     pub fn try_as_str(&self) -> Result<Cow<'a, str>, std::str::Utf8Error> {
         std::str::from_utf8(self.buf).map(|s| {
             if self.quoted {
