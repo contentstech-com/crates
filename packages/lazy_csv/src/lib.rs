@@ -13,7 +13,7 @@ use bumpalo::{
 pub struct Csv<'a> {
     buf: &'a [u8],
     start: Option<usize>,
-    row: usize,
+    line_end: bool,
 }
 
 impl<'a> Csv<'a> {
@@ -21,7 +21,7 @@ impl<'a> Csv<'a> {
         Self {
             buf,
             start: Some(0),
-            row: 0,
+            line_end: false,
         }
     }
 
@@ -35,10 +35,20 @@ enum State {
     Quoted,
 }
 
+pub enum CsvIterItem<'a> {
+    Cell(Cell<'a>),
+    LineEnd,
+}
+
 impl<'a> Iterator for Csv<'a> {
-    type Item = Cell<'a>;
+    type Item = CsvIterItem<'a>;
 
     fn next(&mut self) -> Option<Self::Item> {
+        if self.line_end {
+            self.line_end = false;
+            return Some(CsvIterItem::LineEnd);
+        }
+
         let start = self.start?;
         let mut cursor = start;
         let mut padding = 0;
@@ -54,14 +64,11 @@ impl<'a> Iterator for Csv<'a> {
                             c @ (b',' | b'\n') => {
                                 let cell = Cell {
                                     buf: &self.buf[(start + padding)..(index - padding)],
-                                    row: self.row,
                                     quoted: padding > 0,
                                 };
                                 self.start = Some(index + 1);
-                                if c == b'\n' {
-                                    self.row += 1;
-                                }
-                                break Some(cell);
+                                self.line_end = c == b'\n';
+                                break Some(CsvIterItem::Cell(cell));
                             }
                             b'"' => {
                                 state = State::Quoted;
@@ -94,23 +101,19 @@ impl<'a, const COLS: usize> Iterator for CsvRowIter<'a, COLS> {
 
     fn next(&mut self) -> Option<Self::Item> {
         let mut arr = [const { MaybeUninit::uninit() }; COLS];
-        let mut row = None;
         for i in 0..COLS {
             match self.csv.next() {
-                Some(cell) => {
-                    match row {
-                        Some(row) => {
-                            if row != cell.row {
-                                panic!("Column count doesn't match on row {row}: expected {COLS} columns, but new row started at index {i}");
-                            }
-                        }
-                        None => row = Some(cell.row),
-                    }
+                Some(CsvIterItem::Cell(cell)) => {
                     // SAFETY: we have to initialize the cell beforehand
                     unsafe { arr.get_unchecked_mut(i).write(cell) };
                 }
+                Some(CsvIterItem::LineEnd) => panic!("Column count doesn't match: expected {COLS} columns, but new row started at index {i}"),
                 None => return None,
             }
+        }
+
+        if !matches!(self.csv.next(), Some(CsvIterItem::LineEnd)) {
+            panic!("Column count doesn't match: expected {COLS} columns, but cell still exists");
         }
 
         Some(arr.map(|mem| unsafe { mem.assume_init() }))
@@ -121,7 +124,6 @@ impl<'a, const COLS: usize> Iterator for CsvRowIter<'a, COLS> {
 pub struct Cell<'a> {
     pub buf: &'a [u8],
     pub quoted: bool,
-    pub row: usize,
 }
 
 impl<'a> Cell<'a> {

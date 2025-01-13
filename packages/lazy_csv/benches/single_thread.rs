@@ -1,7 +1,7 @@
 use std::{fs::File, hint::black_box, io::Cursor};
 
 use criterion::{criterion_group, criterion_main, Bencher, BenchmarkId, Criterion};
-use lazy_csv::Csv;
+use lazy_csv::{Csv, CsvIterItem};
 use memchr::memchr_iter;
 use memmap2::Mmap;
 
@@ -19,8 +19,10 @@ fn prepare(rows: usize) -> Vec<u8> {
 
 pub fn lazy_csv(b: &mut Bencher, slice: &[u8]) {
     b.iter(|| {
-        for cell in Csv::new(slice) {
-            black_box(cell.try_as_str().unwrap());
+        for item in Csv::new(slice) {
+            if let CsvIterItem::Cell(cell) = item {
+                black_box(cell.try_as_str().unwrap());
+            }
         }
     })
 }
