@@ -35,6 +35,24 @@ pub fn lazy_csv_into_rows(b: &mut Bencher, slice: &[u8]) {
     })
 }
 
+pub fn lazy_csv_raw(b: &mut Bencher, slice: &[u8]) {
+    b.iter(|| {
+        for cell in Csv::new(slice) {
+            black_box(cell.buf());
+        }
+    })
+}
+
+pub fn lazy_csv_into_rows_raw(b: &mut Bencher, slice: &[u8]) {
+    b.iter(|| {
+        for row in Csv::new(slice).into_rows::<28>() {
+            for cell in row {
+                black_box(cell.buf());
+            }
+        }
+    })
+}
+
 pub fn csv(b: &mut Bencher, slice: &[u8]) {
     b.iter(|| {
         let cursor = Cursor::new(slice);
@@ -59,6 +77,14 @@ fn bench_parsers(c: &mut Criterion) {
         group.bench_with_input(BenchmarkId::new("lazy_csv (into_rows)", i), &i, |b, i| {
             lazy_csv_into_rows(b, &prepare(*i))
         });
+        group.bench_with_input(BenchmarkId::new("lazy_csv (raw)", i), &i, |b, i| {
+            lazy_csv_raw(b, &prepare(*i))
+        });
+        group.bench_with_input(
+            BenchmarkId::new("lazy_csv (into_rows, raw)", i),
+            &i,
+            |b, i| lazy_csv_into_rows_raw(b, &prepare(*i)),
+        );
         group.bench_with_input(BenchmarkId::new("csv", i), &i, |b, i| csv(b, &prepare(*i)));
     }
     group.finish();
