@@ -1,6 +1,7 @@
 use std::{
     borrow::Cow,
     hash::{Hash, Hasher},
+    hint::unreachable_unchecked,
     mem::MaybeUninit,
 };
 
@@ -74,7 +75,8 @@ impl<'a> Iterator for Csv<'a> {
                                 cursor = index + 1;
                                 padding = 1;
                             }
-                            _ => unreachable!(),
+                            // SAFETY: since the character is found by memchr, it's guaranteed to be matched by the match arms above.
+                            _ => unsafe { unreachable_unchecked() },
                         }
                     }
                     None => break None,
