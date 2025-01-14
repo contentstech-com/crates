@@ -13,22 +13,26 @@ use bumpalo::{
 
 pub struct Csv<'a> {
     buf: &'a [u8],
-    start: Option<usize>,
-    line_end: bool,
+    state: IterState,
 }
 
 impl<'a> Csv<'a> {
     pub fn new(buf: &'a [u8]) -> Self {
         Self {
             buf,
-            start: Some(0),
-            line_end: false,
+            state: IterState::Cell(0),
         }
     }
 
     pub fn into_rows<const COLS: usize>(self) -> CsvRowIter<'a, COLS> {
         CsvRowIter { csv: self }
     }
+}
+
+enum IterState {
+    Cell(usize),
+    LineEnd(usize),
+    Done,
 }
 
 enum State {
@@ -45,50 +49,64 @@ impl<'a> Iterator for Csv<'a> {
     type Item = CsvIterItem<'a>;
 
     fn next(&mut self) -> Option<Self::Item> {
-        if self.line_end {
-            self.line_end = false;
-            return Some(CsvIterItem::LineEnd);
-        }
+        match self.state {
+            IterState::Cell(start) => {
+                let mut cursor = start;
+                let mut padding = 0;
+                let mut state = State::Initial;
 
-        let start = self.start?;
-        let mut cursor = start;
-        let mut padding = 0;
-        let mut state = State::Initial;
-
-        loop {
-            match state {
-                State::Initial => match memchr::memchr3(b',', b'\n', b'"', &self.buf[cursor..]) {
-                    Some(index_relative) => {
-                        let index = index_relative + cursor;
-                        // SAFETY: since `memchr` guarantees that `index_relative` is within the bounds of `self.buf[cursor..]`, it's also guaranteed that `index_relative + cursor` is within the bounds of `self.buf`.
-                        match unsafe { *self.buf.get_unchecked(index) } {
-                            c @ (b',' | b'\n') => {
-                                let cell = Cell {
-                                    buf: &self.buf[(start + padding)..(index - padding)],
-                                };
-                                self.start = Some(index + 1);
-                                self.line_end = c == b'\n';
-                                break Some(CsvIterItem::Cell(cell));
+                loop {
+                    match state {
+                        State::Initial => {
+                            match memchr::memchr3(b',', b'\n', b'"', &self.buf[cursor..]) {
+                                Some(index_relative) => {
+                                    let index = index_relative + cursor;
+                                    // SAFETY: since `memchr` guarantees that `index_relative` is within the bounds of `self.buf[cursor..]`, it's also guaranteed that `index_relative + cursor` is within the bounds of `self.buf`.
+                                    match unsafe { *self.buf.get_unchecked(index) } {
+                                        c @ (b',' | b'\n') => {
+                                            let cell = Cell {
+                                                buf: &self.buf
+                                                    [(start + padding)..(index - padding)],
+                                            };
+                                            self.state = match c == b'\n' {
+                                                true => IterState::LineEnd(index),
+                                                false => IterState::Cell(index + 1),
+                                            };
+                                            break Some(CsvIterItem::Cell(cell));
+                                        }
+                                        b'"' => {
+                                            state = State::Quoted;
+                                            cursor = index + 1;
+                                            padding = 1;
+                                        }
+                                        // SAFETY: since the character is found by memchr, it's guaranteed to be matched by the match arms above.
+                                        _ => unsafe { unreachable_unchecked() },
+                                    }
+                                }
+                                None => {
+                                    self.state = IterState::Done;
+                                    break None;
+                                }
                             }
-                            b'"' => {
-                                state = State::Quoted;
-                                cursor = index + 1;
-                                padding = 1;
-                            }
-                            // SAFETY: since the character is found by memchr, it's guaranteed to be matched by the match arms above.
-                            _ => unsafe { unreachable_unchecked() },
                         }
+                        State::Quoted => match memchr::memchr(b'"', &self.buf[cursor..]) {
+                            Some(index_relative) => {
+                                state = State::Initial;
+                                cursor = cursor + index_relative + 1;
+                            }
+                            None => {
+                                self.state = IterState::Done;
+                                break None;
+                            }
+                        },
                     }
-                    None => break None,
-                },
-                State::Quoted => match memchr::memchr(b'"', &self.buf[cursor..]) {
-                    Some(index_relative) => {
-                        state = State::Initial;
-                        cursor = cursor + index_relative + 1;
-                    }
-                    None => break None,
-                },
+                }
             }
+            IterState::LineEnd(pos) => {
+                self.state = IterState::Cell(pos + 1);
+                Some(CsvIterItem::LineEnd)
+            }
+            IterState::Done => None,
         }
     }
 }
