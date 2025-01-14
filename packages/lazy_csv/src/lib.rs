@@ -64,7 +64,6 @@ impl<'a> Iterator for Csv<'a> {
                             c @ (b',' | b'\n') => {
                                 let cell = Cell {
                                     buf: &self.buf[(start + padding)..(index - padding)],
-                                    quoted: padding > 0,
                                 };
                                 self.start = Some(index + 1);
                                 self.line_end = c == b'\n';
@@ -123,13 +122,13 @@ impl<'a, const COLS: usize> Iterator for CsvRowIter<'a, COLS> {
 #[derive(Debug, Clone, Eq)]
 pub struct Cell<'a> {
     pub buf: &'a [u8],
-    pub quoted: bool,
 }
 
 impl<'a> Cell<'a> {
     pub fn try_as_str(&self) -> Result<Cow<'a, str>, std::str::Utf8Error> {
         std::str::from_utf8(self.buf).map(|s| {
-            if self.quoted {
+            // SAFETY: since `s.as_bytes()` is guaranteed to be valid UTF-8, it's also guaranteed that the first character is '"' if the first byte is b'"' due to UTF-8 representing ASCII characters as-is.
+            if !s.is_empty() && unsafe { *s.as_bytes().get_unchecked(0) } == b'"' {
                 Cow::Owned(s.replace("\"\"", "\""))
             } else {
                 Cow::Borrowed(s)
