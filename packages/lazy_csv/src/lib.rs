@@ -64,9 +64,14 @@ impl<'a> Iterator for Csv<'a> {
                                     // SAFETY: since `memchr` guarantees that `index_relative` is within the bounds of `self.buf[cursor..]`, it's also guaranteed that `index_relative + cursor` is within the bounds of `self.buf`.
                                     match unsafe { *self.buf.get_unchecked(index) } {
                                         c @ (b',' | b'\n') => {
+                                            let is_crlf = c == b'\n'
+                                                    && index != 0
+                                                    // SAFETY: `index - 1` is checked to be within the bounds of `self.buf`.
+                                                    && unsafe { *self.buf.get_unchecked(index - 1) } == b'\r';
+                                            let padding_end = padding + (is_crlf as usize);
                                             let cell = Cell {
                                                 buf: &self.buf
-                                                    [(start + padding)..(index - padding)],
+                                                    [(start + padding)..(index - padding_end)],
                                             };
                                             self.state = match c == b'\n' {
                                                 true => IterState::LineEnd(index),
