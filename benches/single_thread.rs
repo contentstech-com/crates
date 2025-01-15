@@ -1,7 +1,7 @@
 use std::{fs::File, hint::black_box, io::Cursor};
 
 use criterion::{criterion_group, criterion_main, Bencher, BenchmarkId, Criterion};
-use lazy_csv::{Csv, CsvIterItem};
+use lazycsv::{Csv, CsvIterItem};
 use memchr::memchr_iter;
 use memmap2::Mmap;
 
