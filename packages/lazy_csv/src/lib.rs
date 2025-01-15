@@ -1,7 +1,6 @@
 use std::{
     borrow::Cow,
     hash::{Hash, Hasher},
-    hint::unreachable_unchecked,
     mem::MaybeUninit,
 };
 
@@ -11,20 +10,29 @@ use bumpalo::{
     Bump,
 };
 
-pub struct Csv<'a> {
+pub struct Csv<'a, const SEP: u8 = b','> {
     buf: &'a [u8],
     state: IterState,
 }
 
 impl<'a> Csv<'a> {
-    pub fn new(buf: &'a [u8]) -> Self {
-        Self {
+    pub fn new(buf: &'a [u8]) -> Csv<'a> {
+        Csv {
             buf,
             state: IterState::Cell(0),
         }
     }
 
-    pub fn into_rows<const COLS: usize>(self) -> CsvRowIter<'a, COLS> {
+    pub fn new_with_separator<const SEP: u8>(buf: &'a [u8]) -> Csv<'a, SEP> {
+        Csv {
+            buf,
+            state: IterState::Cell(0),
+        }
+    }
+}
+
+impl<'a, const SEP: u8> Csv<'a, SEP> {
+    pub fn into_rows<const COLS: usize>(self) -> CsvRowIter<'a, COLS, SEP> {
         CsvRowIter { csv: self }
     }
 }
@@ -45,7 +53,7 @@ pub enum CsvIterItem<'a> {
     LineEnd,
 }
 
-impl<'a> Iterator for Csv<'a> {
+impl<'a, const SEP: u8> Iterator for Csv<'a, SEP> {
     type Item = CsvIterItem<'a>;
 
     fn next(&mut self) -> Option<Self::Item> {
@@ -58,34 +66,31 @@ impl<'a> Iterator for Csv<'a> {
                 loop {
                     match state {
                         State::Initial => {
-                            match memchr::memchr3(b',', b'\n', b'"', &self.buf[cursor..]) {
+                            match memchr::memchr3(SEP, b'\n', b'"', &self.buf[cursor..]) {
                                 Some(index_relative) => {
                                     let index = index_relative + cursor;
                                     // SAFETY: since `memchr` guarantees that `index_relative` is within the bounds of `self.buf[cursor..]`, it's also guaranteed that `index_relative + cursor` is within the bounds of `self.buf`.
-                                    match unsafe { *self.buf.get_unchecked(index) } {
-                                        c @ (b',' | b'\n') => {
-                                            let is_crlf = c == b'\n'
-                                                    && index != 0
-                                                    // SAFETY: `index - 1` is checked to be within the bounds of `self.buf`.
-                                                    && unsafe { *self.buf.get_unchecked(index - 1) } == b'\r';
-                                            let padding_end = padding + (is_crlf as usize);
-                                            let cell = Cell {
-                                                buf: &self.buf
-                                                    [(start + padding)..(index - padding_end)],
-                                            };
-                                            self.state = match c == b'\n' {
-                                                true => IterState::LineEnd(index),
-                                                false => IterState::Cell(index + 1),
-                                            };
-                                            break Some(CsvIterItem::Cell(cell));
-                                        }
-                                        b'"' => {
-                                            state = State::Quoted;
-                                            cursor = index + 1;
-                                            padding = 1;
-                                        }
-                                        // SAFETY: since the character is found by memchr, it's guaranteed to be matched by the match arms above.
-                                        _ => unsafe { unreachable_unchecked() },
+                                    let c = unsafe { *self.buf.get_unchecked(index) };
+                                    if c == b'"' {
+                                        state = State::Quoted;
+                                        cursor = index + 1;
+                                        padding = 1;
+                                    } else {
+                                        let is_crlf = c == b'\n'
+                                            && index != 0
+                                            // SAFETY: `index - 1` is checked to be within the bounds of `self.buf`.
+                                            && unsafe { *self.buf.get_unchecked(index - 1) }
+                                                == b'\r';
+                                        let padding_end = padding + (is_crlf as usize);
+                                        let cell = Cell {
+                                            buf: &self.buf
+                                                [(start + padding)..(index - padding_end)],
+                                        };
+                                        self.state = match c == b'\n' {
+                                            true => IterState::LineEnd(index),
+                                            false => IterState::Cell(index + 1),
+                                        };
+                                        break Some(CsvIterItem::Cell(cell));
                                     }
                                 }
                                 None => {
@@ -116,11 +121,11 @@ impl<'a> Iterator for Csv<'a> {
     }
 }
 
-pub struct CsvRowIter<'a, const COLS: usize> {
-    csv: Csv<'a>,
+pub struct CsvRowIter<'a, const COLS: usize, const SEP: u8> {
+    csv: Csv<'a, SEP>,
 }
 
-impl<'a, const COLS: usize> Iterator for CsvRowIter<'a, COLS> {
+impl<'a, const COLS: usize, const SEP: u8> Iterator for CsvRowIter<'a, COLS, SEP> {
     type Item = [Cell<'a>; COLS];
 
     fn next(&mut self) -> Option<Self::Item> {
