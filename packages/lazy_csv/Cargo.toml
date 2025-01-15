@@ -5,7 +5,6 @@ edition = "2021"
 
 [dependencies]
 memchr = "2.7.4"
-bumpalo = { optional = true, version = "3", features = ["collections"] }
 
 [dev-dependencies]
 criterion = "0.5.1"

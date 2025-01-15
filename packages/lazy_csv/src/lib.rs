@@ -4,12 +4,6 @@ use std::{
     mem::MaybeUninit,
 };
 
-#[cfg(feature = "bumpalo")]
-use bumpalo::{
-    collections::{String as BumpString, Vec as BumpVec},
-    Bump,
-};
-
 pub struct Csv<'a, const SEP: u8 = b','> {
     buf: &'a [u8],
     state: IterState,
@@ -164,16 +158,6 @@ impl<'a> Cell<'a> {
                 Cow::Borrowed(s)
             }
         })
-    }
-
-    #[cfg(feature = "bumpalo")]
-    pub fn try_as_bump_string<'b: 'a>(
-        &'a self,
-        bump: &'b Bump,
-    ) -> Result<BumpString<'b>, bumpalo::collections::string::FromUtf8Error<'b>> {
-        let mut vec = BumpVec::with_capacity_in(self.buf.len(), bump);
-        vec.extend_from_slice(self.buf);
-        BumpString::from_utf8(vec)
     }
 }
 
