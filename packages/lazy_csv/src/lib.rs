@@ -4,12 +4,34 @@ use std::{
     mem::MaybeUninit,
 };
 
+/// A stateful CSV parser.
+///
+/// `lazycsv` primarily supports a subset of [RFC 4180](https://datatracker.ietf.org/doc/html/rfc4180) with minor extensions.
+///
+/// ### According to RFC 4180:
+///
+/// - No escape mechanisms other than quoting are supported.
+/// - Padding cells with whitespace is not allowed.
+/// - Using double quotes without quoting is not allowed.
+/// - Quotes must always appear at the very beginning of a cell.
+///
+/// ### Additional Restrictions:
+///
+/// - Only ASCII and UTF-8 encodings are supported.
+///
+/// ### Additional Supports:
+///
+/// - Using LF (`\n`) instead of CRLF (`\r\n`) as the newline is permitted.
+/// - Customizing the separator character is possible by using [`Csv::new_with_separator()`].
 pub struct Csv<'a, const SEP: u8 = b','> {
     buf: &'a [u8],
     state: IterState,
 }
 
 impl<'a> Csv<'a> {
+    /// Creates a new CSV parser for the given buffer.
+    ///
+    /// To customize the separator character, use [`Csv::new_with_separator()`].
     pub fn new(buf: &'a [u8]) -> Csv<'a> {
         Csv {
             buf,
@@ -17,6 +39,16 @@ impl<'a> Csv<'a> {
         }
     }
 
+    /// Creates a new CSV parser for the given buffer, with the given separator character.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use lazycsv::Csv;
+    ///
+    /// // Parsing TSV instead of CSV
+    /// let tsv = Csv::new_with_separator::<b'\t'>(b"a\tb\tc\n1\t2\t3");
+    /// ```
     pub fn new_with_separator<const SEP: u8>(buf: &'a [u8]) -> Csv<'a, SEP> {
         Csv {
             buf,
@@ -26,6 +58,17 @@ impl<'a> Csv<'a> {
 }
 
 impl<'a, const SEP: u8> Csv<'a, SEP> {
+    /// Create a wrapper iterator that buffers the cells per row.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use lazycsv::Csv;
+    ///
+    /// for [first, second, third] in Csv::new(b"a,b,c\n1,2,3").into_rows() {
+    ///     println!("{}, {}, {}", first.try_as_str().unwrap(), second.try_as_str().unwrap(), third.try_as_str().unwrap());
+    /// }
+    /// ```
     pub fn into_rows<const COLS: usize>(self) -> CsvRowIter<'a, COLS, SEP> {
         CsvRowIter { csv: self }
     }
@@ -42,8 +85,11 @@ enum State {
     Quoted,
 }
 
+/// An item yielded by [`Csv`], indicates either a cell or a line break.
 pub enum CsvIterItem<'a> {
+    /// The row continues with a cell.
     Cell(Cell<'a>),
+    /// The row ends with a line break.
     LineEnd,
 }
 
@@ -110,6 +156,9 @@ impl<'a, const SEP: u8> Iterator for Csv<'a, SEP> {
     }
 }
 
+/// An iterator that buffers and yields rows of cells.
+///
+/// Can be created by calling [`Csv::into_rows()`].
 pub struct CsvRowIter<'a, const COLS: usize, const SEP: u8> {
     csv: Csv<'a, SEP>,
 }
@@ -138,12 +187,16 @@ impl<'a, const COLS: usize, const SEP: u8> Iterator for CsvRowIter<'a, COLS, SEP
     }
 }
 
+/// A cell in a CSV row.
 #[derive(Debug, Clone, Eq)]
 pub struct Cell<'a> {
     pub buf: &'a [u8],
 }
 
 impl<'a> Cell<'a> {
+    /// Converts the cell to a string.
+    ///
+    /// Calling this function performs a UTF-8 validation and dequotes the cell if necessary.
     pub fn try_as_str(&self) -> Result<Cow<'a, str>, std::str::Utf8Error> {
         std::str::from_utf8(self.buf).map(|s| {
             // SAFETY: since `s.as_bytes()` is guaranteed to be valid UTF-8, it's also guaranteed that the first character is '"' if the first byte is b'"' due to UTF-8 representing ASCII characters as-is.
