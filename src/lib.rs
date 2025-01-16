@@ -202,15 +202,15 @@ impl<'a, const SEP: u8> Iterator for Csv<'a, SEP> {
 
         let mut cursor = start;
         let mut padding = 0;
-        let mut is_quoted_state = false;
+        let mut in_quoted_state = false;
 
         loop {
-            if is_quoted_state {
+            if in_quoted_state {
                 let Some(index_relative) = memchr(b'"', &self.buf[cursor..]) else {
                     self.state = IterState::Done;
                     return None;
                 };
-                is_quoted_state = false;
+                in_quoted_state = false;
                 cursor += index_relative + 1;
                 continue;
             }
@@ -227,7 +227,7 @@ impl<'a, const SEP: u8> Iterator for Csv<'a, SEP> {
             let c = unsafe { *self.buf.get_unchecked(index) };
 
             if c == b'"' {
-                is_quoted_state = true;
+                in_quoted_state = true;
                 cursor = index + 1;
                 padding = 1;
                 continue;
