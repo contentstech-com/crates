@@ -5,6 +5,7 @@
 //! - **Performant**: The parser utilizes SIMD operations, therefore is very performant.
 //! - **Minimal hidden costs**: Every API doesn't bring any invisible overheads, and each operation only does what it needs to do.
 //! - **Near-zero-allocation**: The parser doesn't allocate any memory during parsing and only performs allocation when dequoting each cell.
+//! - **`#![no_std]` by default**: The crate is `#![no_std]` by default, and it can be used in `#![no_std]` environments without any additional configuration.
 //!
 //! # Supported Features
 //!
@@ -51,8 +52,10 @@
 //! }
 //! ```
 
-use std::{
-    borrow::Cow,
+extern crate alloc;
+
+use alloc::borrow::Cow;
+use core::{
     hash::{Hash, Hasher},
     mem::MaybeUninit,
 };
