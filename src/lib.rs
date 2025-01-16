@@ -60,10 +60,8 @@
 extern crate alloc;
 
 use alloc::borrow::Cow;
-use core::{
-    hash::{Hash, Hasher},
-    mem::MaybeUninit,
-};
+use core::{hash::Hash, mem::MaybeUninit};
+
 use thiserror::Error;
 
 /// A stateful CSV parser.
@@ -73,6 +71,7 @@ use thiserror::Error;
 /// ### `const` Parameters
 ///
 /// - `SEP`: The separator character in `u8`, defaults to `b','`.
+#[derive(Copy, Clone, Eq, PartialEq, Hash, Debug)]
 pub struct Csv<'a, const SEP: u8 = b','> {
     buf: &'a [u8],
     state: IterState,
@@ -172,6 +171,7 @@ impl<'a, const SEP: u8> Csv<'a, SEP> {
     }
 }
 
+#[derive(Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug)]
 enum IterState {
     Cell(usize),
     LineEnd(usize),
@@ -262,6 +262,7 @@ impl<'a, const SEP: u8> Iterator for Csv<'a, SEP> {
 ///
 /// - `COLS`: The number of columns in the CSV.
 /// - `SEP`: The separator character in `u8`, defaults to `b','`.
+#[derive(Copy, Clone, Eq, PartialEq, Hash, Debug)]
 pub struct CsvRowIter<'a, const COLS: usize, const SEP: u8> {
     csv: Csv<'a, SEP>,
 }
@@ -345,7 +346,7 @@ pub enum RowIterError {
 }
 
 /// A cell in a CSV row.
-#[derive(Debug, Clone, Eq)]
+#[derive(Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug)]
 pub struct Cell<'a> {
     /// The underlying buffer, containing potentially quoted cell content as bytes.
     pub buf: &'a [u8],
@@ -364,29 +365,5 @@ impl<'a> Cell<'a> {
                 Cow::Borrowed(s)
             }
         })
-    }
-}
-
-impl Hash for Cell<'_> {
-    fn hash<H: Hasher>(&self, state: &mut H) {
-        self.buf.hash(state);
-    }
-}
-
-impl PartialEq for Cell<'_> {
-    fn eq(&self, other: &Self) -> bool {
-        self.buf == other.buf
-    }
-}
-
-impl PartialOrd for Cell<'_> {
-    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
-        Some(self.buf.cmp(other.buf))
-    }
-}
-
-impl Ord for Cell<'_> {
-    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
-        self.buf.cmp(other.buf)
     }
 }
