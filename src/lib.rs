@@ -129,6 +129,44 @@ impl<'a, const SEP: u8> Csv<'a, SEP> {
     pub fn into_rows<const COLS: usize>(self) -> CsvRowIter<'a, COLS, SEP> {
         CsvRowIter { csv: self }
     }
+
+    /// Skips the first `n` rows.
+    ///
+    /// Using this function is more efficient than calling [`Iterator::skip()`] on the row iterator made with [`Csv::into_rows()`],
+    /// as it only looks for newline characters instead of trying to recognize cells.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # let _: Option<()> = (|| {
+    /// use lazycsv::{Csv, CsvIterItem};
+    ///
+    /// let mut csv = Csv::new(b"a,b,c\n1,2,3\n4,5,6");
+    /// let CsvIterItem::Cell(cell) = csv.skip_rows(2).next()? else {
+    ///     panic!("Expected a cell");
+    /// };
+    /// assert_eq!(cell.buf, b"4");
+    /// # None
+    /// # })();
+    /// ```
+    pub fn skip_rows(mut self, n: usize) -> Self {
+        let mut start = match self.state {
+            IterState::Cell(start) => start,
+            IterState::LineEnd(lf) => lf + 1,
+            IterState::Done => return self,
+        };
+
+        for _ in 0..n {
+            if let Some(index_relative) = memchr::memchr(b'\n', &self.buf[start..]) {
+                start += index_relative + 1;
+            } else {
+                self.state = IterState::Done;
+                break;
+            };
+        }
+        self.state = IterState::Cell(start);
+        self
+    }
 }
 
 enum IterState {
@@ -223,6 +261,33 @@ impl<'a, const SEP: u8> Iterator for Csv<'a, SEP> {
 /// - `SEP`: The separator character in `u8`, defaults to `b','`.
 pub struct CsvRowIter<'a, const COLS: usize, const SEP: u8> {
     csv: Csv<'a, SEP>,
+}
+
+impl<const COLS: usize, const SEP: u8> CsvRowIter<'_, COLS, SEP> {
+    /// Skips the first `n` rows.
+    ///
+    /// Using this function is more efficient than calling [`Iterator::skip()`],
+    /// as it only looks for newline characters instead of trying to recognize cells.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # let _: Option<()> = (|| {
+    /// use lazycsv::Csv;
+    ///
+    /// let mut rows = Csv::new(b"a,b,c\n1,2,3\n4,5,6").into_rows();
+    /// let [four, five, six] = rows.skip(2).next()? else {
+    ///     panic!("Expected a row");
+    /// };
+    /// assert_eq!([four.buf, five.buf, six.buf], [b"4", b"5", b"6"]);
+    /// # None
+    /// # })();
+    /// ```
+    pub fn skip(self, n: usize) -> Self {
+        Self {
+            csv: self.csv.skip_rows(n),
+        }
+    }
 }
 
 impl<'a, const COLS: usize, const SEP: u8> Iterator for CsvRowIter<'a, COLS, SEP> {
