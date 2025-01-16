@@ -54,6 +54,8 @@
 //! # Ok::<(), std::str::Utf8Error>(())
 //! ```
 
+#![deny(missing_docs)]
+
 extern crate alloc;
 
 use alloc::borrow::Cow;
