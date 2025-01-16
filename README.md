@@ -1,6 +1,6 @@
-# lazycsv
-
-The `lazycsv` crate provides a performant CSV parser.
+lazycsv
+========
+Vectorized, lazy-decoding, zero-copy CSV parser.
 
 ## Primary Focuses
 
