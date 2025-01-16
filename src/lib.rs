@@ -62,6 +62,7 @@ extern crate alloc;
 use alloc::borrow::Cow;
 use core::{hash::Hash, mem::MaybeUninit};
 
+use memchr::{memchr, memchr3};
 use thiserror::Error;
 
 /// A stateful CSV parser.
@@ -178,11 +179,6 @@ enum IterState {
     Done,
 }
 
-enum State {
-    Initial,
-    Quoted,
-}
-
 /// An item yielded by [`Csv`], indicates either a cell or a line break.
 pub enum CsvIterItem<'a> {
     /// The row continues with a cell.
@@ -195,61 +191,61 @@ impl<'a, const SEP: u8> Iterator for Csv<'a, SEP> {
     type Item = CsvIterItem<'a>;
 
     fn next(&mut self) -> Option<Self::Item> {
-        match self.state {
-            IterState::Cell(start) => {
-                let mut cursor = start;
-                let mut padding = 0;
-                let mut state = State::Initial;
-
-                loop {
-                    match state {
-                        State::Initial => {
-                            let Some(index_relative) =
-                                memchr::memchr3(SEP, b'\n', b'"', &self.buf[cursor..])
-                            else {
-                                self.state = IterState::Done;
-                                break None;
-                            };
-                            let index = index_relative + cursor;
-                            // SAFETY: since `memchr` guarantees that `index_relative` is within the bounds of `self.buf[cursor..]`, it's also guaranteed that `index_relative + cursor` is within the bounds of `self.buf`.
-                            let c = unsafe { *self.buf.get_unchecked(index) };
-                            if c == b'"' {
-                                state = State::Quoted;
-                                cursor = index + 1;
-                                padding = 1;
-                            } else {
-                                // SAFETY: `index - 1` is checked to be within the bounds of `self.buf`.
-                                let is_crlf = c == b'\n'
-                                    && index != 0
-                                    && unsafe { *self.buf.get_unchecked(index - 1) } == b'\r';
-                                let padding_end = padding + (is_crlf as usize);
-                                let cell = Cell {
-                                    buf: &self.buf[(start + padding)..(index - padding_end)],
-                                };
-                                self.state = match c == b'\n' {
-                                    true => IterState::LineEnd(index),
-                                    false => IterState::Cell(index + 1),
-                                };
-                                break Some(CsvIterItem::Cell(cell));
-                            }
-                        }
-                        State::Quoted => {
-                            let Some(index_relative) = memchr::memchr(b'"', &self.buf[cursor..])
-                            else {
-                                self.state = IterState::Done;
-                                break None;
-                            };
-                            state = State::Initial;
-                            cursor = cursor + index_relative + 1;
-                        }
-                    }
-                }
-            }
+        let start = match self.state {
             IterState::LineEnd(pos) => {
                 self.state = IterState::Cell(pos + 1);
-                Some(CsvIterItem::LineEnd)
+                return Some(CsvIterItem::LineEnd);
             }
-            IterState::Done => None,
+            IterState::Done => return None,
+            IterState::Cell(start) => start,
+        };
+
+        let mut cursor = start;
+        let mut padding = 0;
+        let mut is_quoted_state = false;
+
+        loop {
+            if is_quoted_state {
+                let Some(index_relative) = memchr(b'"', &self.buf[cursor..]) else {
+                    self.state = IterState::Done;
+                    return None;
+                };
+                is_quoted_state = false;
+                cursor += index_relative + 1;
+                continue;
+            }
+
+            let Some(index_relative) = memchr3(SEP, b'\n', b'"', &self.buf[cursor..]) else {
+                self.state = IterState::Done;
+                return None;
+            };
+            let index = index_relative + cursor;
+
+            // SAFETY: since `memchr` guarantees that `index_relative` is within the bounds of
+            // `self.buf[cursor..]`, it's also guaranteed that `index_relative + cursor` is within
+            // the bounds of `self.buf`.
+            let c = unsafe { *self.buf.get_unchecked(index) };
+
+            if c == b'"' {
+                is_quoted_state = true;
+                cursor = index + 1;
+                padding = 1;
+                continue;
+            }
+
+            // SAFETY: `index - 1` is checked to be within the bounds of `self.buf`.
+            let is_crlf =
+                c == b'\n' && index != 0 && unsafe { *self.buf.get_unchecked(index - 1) } == b'\r';
+            let padding_end = padding + (is_crlf as usize);
+            let cell = Cell {
+                buf: &self.buf[(start + padding)..(index - padding_end)],
+            };
+            self.state = if c == b'\n' {
+                IterState::LineEnd(index)
+            } else {
+                IterState::Cell(index + 1)
+            };
+            return Some(CsvIterItem::Cell(cell));
         }
     }
 }
