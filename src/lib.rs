@@ -6,7 +6,7 @@
 //! - **Minimal hidden costs**: Every API doesn't bring any invisible overheads, and each operation only does what it needs to do.
 //! - **Zero copy, zero allocation by default**: The parser doesn't allocate any memory during parsing and only performs allocation when dequoting each cell.
 //! - **Lazy Decoding**: Input is not copied or unquoted until requested. This is useful when you only need to access a few cells in a large CSV file.
-//! - **`#![no_std]` by default**: The crate is `#![no_std]` by default, and it can be used in `#![no_std]` environments without any additional configuration.
+//! - **`#![no_std]` eligible**: The crate is `#![no_std]` compatible, and it can be used in systems without an allocator.
 //!
 //! # Supported Features
 //!
@@ -54,13 +54,33 @@
 //! }
 //! # Ok::<(), Box<dyn std::error::Error>>(())
 //! ```
+//!
+//! # Crate features
+//!
+//! * **std** - When enabled (the default), this will permit features specific to the standard
+//!   library. Currently, the only thing used from the standard library is runtime SIMD CPU feature
+//!   detection. This means that this feature must be enabled to get AVX2 accelerated routines on
+//!   `x86_64` targets without enabling the `avx2` feature at compile time, for example. When `std`
+//!   is not enabled, this crate will still attempt to use SSE2 accelerated routines on `x86_64`.
+//!   It will also use AVX2 accelerated routines when the `avx2` feature is enabled at compile
+//!   time. In general, enable this feature if you can.
+//! * **alloc** - When enabled (the default), API in this crate requiring some kind of allocation
+//!   will become available. (i.e. [`Cell::try_as_str`](crate::Cell::try_as_str)) Otherwise, this
+//!   crate is designed from the ground up to be usable in core-only contexts, so the `alloc`
+//!   feature doesn't add much currently. Notably, disabling `std` but enabling `alloc` will
+//!   **not** result in the use of AVX2 on `x86_64` targets unless the `avx2` feature is enabled at
+//!   compile time. (With `std` enabled, AVX2 can be used even without the `avx2` feature enabled
+//!   at compile time by way of runtime CPU feature detection.)
 
+#![no_std]
 #![deny(missing_docs)]
 
-extern crate alloc;
-
-use alloc::borrow::Cow;
 use core::{hash::Hash, mem::MaybeUninit};
+
+#[cfg(feature = "alloc")]
+extern crate alloc;
+#[cfg(feature = "alloc")]
+use alloc::borrow::Cow;
 
 use memchr::{memchr, memchr3};
 use thiserror::Error;
@@ -352,8 +372,9 @@ impl<'a> Cell<'a> {
     /// Converts the cell to a string.
     ///
     /// Calling this function performs a UTF-8 validation and dequotes the cell if necessary.
-    pub fn try_as_str(&self) -> Result<Cow<'a, str>, std::str::Utf8Error> {
-        std::str::from_utf8(self.buf).map(|s| {
+    #[cfg(feature = "alloc")]
+    pub fn try_as_str(&self) -> Result<Cow<'a, str>, core::str::Utf8Error> {
+        core::str::from_utf8(self.buf).map(|s| {
             // SAFETY: since `s.as_bytes()` is guaranteed to be valid UTF-8, it's also guaranteed that the first character is '"' if the first byte is b'"' due to UTF-8 representing ASCII characters as-is.
             if !s.is_empty() && unsafe { *s.as_bytes().get_unchecked(0) } == b'"' {
                 Cow::Owned(s.replace("\"\"", "\""))

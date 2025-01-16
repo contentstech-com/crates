@@ -8,7 +8,7 @@ The `lazycsv` crate provides a performant CSV parser.
 - **Minimal hidden costs**: Every API doesn't bring any invisible overheads, and each operation only does what it needs to do.
 - **Zero copy, zero allocation by default**: The parser doesn't allocate any memory during parsing and only performs allocation when dequoting each cell.
 - **Lazy Decoding**: Input is not copied or unquoted until requested. This is useful when you only need to access a few cells in a large CSV file.
-- **`#![no_std]` by default**: The crate is `#![no_std]` by default, and it can be used in `#![no_std]` environments without any additional configuration.
+- **`#![no_std]` eligible**: The crate is `#![no_std]` compatible, and it can be used in systems without an allocator.
 
 ## Supported Features
 

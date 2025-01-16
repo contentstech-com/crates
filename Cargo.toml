@@ -3,8 +3,22 @@ name = "lazycsv"
 version = "0.1.0"
 edition = "2021"
 
+[features]
+default = ["std"]
+
+# The 'std' feature permits the lazycsv crate to use the standard library. This
+# permits memchr to use runtime CPU feature detection to automatically
+# accelerate searching via vector instructions. Without the standard library,
+# this automatic detection is not possible.
+std = ["alloc", "memchr/std", "thiserror/std"]
+
+# The 'alloc' feature enables some APIs that require allocation, such as
+# 'Cell::try_as_str'. Note that this feature does not enable runtime CPU feature
+# detection. That still requires 'std'.
+alloc = []
+
 [dependencies]
-memchr = "2.7.4"
+memchr = { version = "2.7.4", default-features = false }
 thiserror = { version = "2.0.11", default-features = false }
 
 [dev-dependencies]
