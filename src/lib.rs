@@ -77,7 +77,7 @@ pub struct Csv<'a, const SEP: u8 = b','> {
 impl<'a> Csv<'a> {
     /// Creates a new CSV parser for the given buffer.
     ///
-    /// To customize the separator character, use [`Csv::new_with_separator()`].
+    /// To customize the separator character, use [`Csv::with_separator()`].
     ///
     /// # Example
     ///
@@ -101,9 +101,9 @@ impl<'a> Csv<'a> {
     /// use lazycsv::Csv;
     ///
     /// // Parsing TSV instead of CSV
-    /// let tsv = Csv::new_with_separator::<b'\t'>(b"a\tb\tc\n1\t2\t3");
+    /// let tsv = Csv::with_separator::<b'\t'>(b"a\tb\tc\n1\t2\t3");
     /// ```
-    pub fn new_with_separator<const SEP: u8>(buf: &'a [u8]) -> Csv<'a, SEP> {
+    pub fn with_separator<const SEP: u8>(buf: &'a [u8]) -> Csv<'a, SEP> {
         Csv {
             buf,
             state: IterState::Cell(0),
