@@ -30,7 +30,7 @@ pub fn lazy_csv(b: &mut Bencher, slice: &[u8]) {
 pub fn lazy_csv_into_rows(b: &mut Bencher, slice: &[u8]) {
     b.iter(|| {
         for row in Csv::new(slice).into_rows::<28>() {
-            for cell in row {
+            for cell in row.unwrap() {
                 black_box(cell.try_as_str().unwrap());
             }
         }
@@ -48,7 +48,7 @@ pub fn lazy_csv_raw(b: &mut Bencher, slice: &[u8]) {
 pub fn lazy_csv_into_rows_raw(b: &mut Bencher, slice: &[u8]) {
     b.iter(|| {
         for row in Csv::new(slice).into_rows::<28>() {
-            for cell in row {
+            for cell in row.unwrap() {
                 black_box(cell);
             }
         }

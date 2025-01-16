@@ -5,6 +5,7 @@ edition = "2021"
 
 [dependencies]
 memchr = "2.7.4"
+thiserror = { version = "2.0.11", default-features = false }
 
 [dev-dependencies]
 criterion = "0.5.1"

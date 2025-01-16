@@ -35,7 +35,8 @@
 //!
 //! // Iterating over rows
 //! let csv = Csv::new(b"a,b,c\n1,2,3");
-//! for [first, second, third] in csv.into_rows() {
+//! for row in csv.into_rows() {
+//!     let [first, second, third] = row?;
 //!     println!(
 //!         "{}, {}, {}",
 //!         first.try_as_str()?,
@@ -51,7 +52,7 @@
 //!         println!("{}", cell.try_as_str()?);
 //!     }
 //! }
-//! # Ok::<(), std::str::Utf8Error>(())
+//! # Ok::<(), Box<dyn std::error::Error>>(())
 //! ```
 
 #![deny(missing_docs)]
@@ -63,6 +64,7 @@ use core::{
     hash::{Hash, Hasher},
     mem::MaybeUninit,
 };
+use thiserror::Error;
 
 /// A stateful CSV parser.
 ///
@@ -121,10 +123,11 @@ impl<'a, const SEP: u8> Csv<'a, SEP> {
     /// ```
     /// use lazycsv::Csv;
     ///
-    /// for [first, second, third] in Csv::new(b"a,b,c\n1,2,3").into_rows() {
+    /// for row in Csv::new(b"a,b,c\n1,2,3").into_rows() {
+    ///     let [first, second, third] = row?;
     ///     println!("{}, {}, {}", first.try_as_str()?, second.try_as_str()?, third.try_as_str()?);
     /// }
-    /// # Ok::<(), std::str::Utf8Error>(())
+    /// # Ok::<(), Box<dyn std::error::Error>>(())
     /// ```
     pub fn into_rows<const COLS: usize>(self) -> CsvRowIter<'a, COLS, SEP> {
         CsvRowIter { csv: self }
@@ -276,7 +279,7 @@ impl<const COLS: usize, const SEP: u8> CsvRowIter<'_, COLS, SEP> {
     /// use lazycsv::Csv;
     ///
     /// let mut rows = Csv::new(b"a,b,c\n1,2,3\n4,5,6").into_rows();
-    /// let [four, five, six] = rows.skip(2).next()? else {
+    /// let [four, five, six] = rows.skip(2).next()?.ok()? else {
     ///     panic!("Expected a row");
     /// };
     /// assert_eq!([four.buf, five.buf, six.buf], [b"4", b"5", b"6"]);
@@ -291,7 +294,7 @@ impl<const COLS: usize, const SEP: u8> CsvRowIter<'_, COLS, SEP> {
 }
 
 impl<'a, const COLS: usize, const SEP: u8> Iterator for CsvRowIter<'a, COLS, SEP> {
-    type Item = [Cell<'a>; COLS];
+    type Item = Result<[Cell<'a>; COLS], RowIterError>;
 
     fn next(&mut self) -> Option<Self::Item> {
         let mut arr = [const { MaybeUninit::uninit() }; COLS];
@@ -301,17 +304,44 @@ impl<'a, const COLS: usize, const SEP: u8> Iterator for CsvRowIter<'a, COLS, SEP
                     // SAFETY: we have to initialize the cell beforehand
                     unsafe { arr.get_unchecked_mut(i).write(cell) };
                 }
-                Some(CsvIterItem::LineEnd) => panic!("Column count doesn't match: expected {COLS} columns, but new row started at index {i}"),
+                Some(CsvIterItem::LineEnd) => {
+                    return Some(Err(RowIterError::ColumnCountSmallerThanExpected {
+                        expected: COLS,
+                        actual: i - 1,
+                    }))
+                }
                 None => return None,
             }
         }
 
         if !matches!(self.csv.next(), Some(CsvIterItem::LineEnd)) {
-            panic!("Column count doesn't match: expected {COLS} columns, but cell still exists");
+            return Some(Err(RowIterError::ColumnCountLargerThanExpected {
+                expected: COLS,
+            }));
         }
 
-        Some(arr.map(|mem| unsafe { mem.assume_init() }))
+        Some(Ok(arr.map(|mem| unsafe { mem.assume_init() })))
     }
+}
+
+/// Errors returned by [`CsvRowIter`].
+#[derive(Error, Debug)]
+pub enum RowIterError {
+    /// Found smaller number of columns than expected.
+    #[error("expected {expected} columns, but new row started after parsing {actual} columns")]
+    ColumnCountSmallerThanExpected {
+        /// The expected number of columns.
+        expected: usize,
+        /// The actual number of columns.
+        actual: usize,
+    },
+
+    /// Found larger number of columns than expected.
+    #[error("expected {expected} columns, but no newline found after parsing {expected} columns")]
+    ColumnCountLargerThanExpected {
+        /// The expected number of columns.
+        expected: usize,
+    },
 }
 
 /// A cell in a CSV row.
