@@ -78,6 +78,14 @@ impl<'a> Csv<'a> {
     /// Creates a new CSV parser for the given buffer.
     ///
     /// To customize the separator character, use [`Csv::new_with_separator()`].
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use lazycsv::Csv;
+    ///
+    /// let csv = Csv::new(b"a,b,c\n1,2,3");
+    /// ```
     pub fn new(buf: &'a [u8]) -> Csv<'a> {
         Csv {
             buf,
