@@ -40,9 +40,9 @@ let csv = Csv::new(b"a,b,c\n1,2,3");
 for [first, second, third] in csv.into_rows() {
     println!(
         "{}, {}, {}",
-        first.try_as_str().unwrap(),
-        second.try_as_str().unwrap(),
-        third.try_as_str().unwrap()
+        first.try_as_str()?,
+        second.try_as_str()?,
+        third.try_as_str()?,
     );
 }
 
@@ -50,7 +50,7 @@ for [first, second, third] in csv.into_rows() {
 let csv2 = Csv::new(b"a,b,c\n1,2,3");
 for item in csv2 {
     if let CsvIterItem::Cell(cell) = item {
-        println!("{}", cell.try_as_str().unwrap());
+        println!("{}", cell.try_as_str()?);
     }
 }
 ```

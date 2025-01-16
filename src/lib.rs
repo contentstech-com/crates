@@ -38,9 +38,9 @@
 //! for [first, second, third] in csv.into_rows() {
 //!     println!(
 //!         "{}, {}, {}",
-//!         first.try_as_str().unwrap(),
-//!         second.try_as_str().unwrap(),
-//!         third.try_as_str().unwrap()
+//!         first.try_as_str()?,
+//!         second.try_as_str()?,
+//!         third.try_as_str()?,
 //!     );
 //! }
 //!
@@ -48,9 +48,10 @@
 //! let csv2 = Csv::new(b"a,b,c\n1,2,3");
 //! for item in csv2 {
 //!     if let CsvIterItem::Cell(cell) = item {
-//!         println!("{}", cell.try_as_str().unwrap());
+//!         println!("{}", cell.try_as_str()?);
 //!     }
 //! }
+//! # Ok::<(), std::str::Utf8Error>(())
 //! ```
 
 extern crate alloc;
@@ -111,8 +112,9 @@ impl<'a, const SEP: u8> Csv<'a, SEP> {
     /// use lazycsv::Csv;
     ///
     /// for [first, second, third] in Csv::new(b"a,b,c\n1,2,3").into_rows() {
-    ///     println!("{}, {}, {}", first.try_as_str().unwrap(), second.try_as_str().unwrap(), third.try_as_str().unwrap());
+    ///     println!("{}, {}, {}", first.try_as_str()?, second.try_as_str()?, third.try_as_str()?);
     /// }
+    /// # Ok::<(), std::str::Utf8Error>(())
     /// ```
     pub fn into_rows<const COLS: usize>(self) -> CsvRowIter<'a, COLS, SEP> {
         CsvRowIter { csv: self }
