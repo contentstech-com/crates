@@ -1,0 +1,14 @@
+name: Run Checks
+on: push
+
+jobs:
+  semantic:
+    name: Semantic Checks
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      - run: cargo fmt -- --check
+      - run: cargo clippy --no-deps -- -D warnings
+      - run: cargo test
