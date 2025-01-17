@@ -26,8 +26,8 @@ std = ["alloc", "memchr/std", "thiserror/std"]
 alloc = []
 
 [dependencies]
-memchr = { version = "2.7.4", default-features = false }
-thiserror = { version = "2.0.11", default-features = false }
+memchr = { version = "2", default-features = false }
+thiserror = { version = "2", default-features = false }
 
 [dev-dependencies]
 criterion = "0.5.1"
