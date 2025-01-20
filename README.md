@@ -2,6 +2,8 @@ lazycsv
 ========
 Vectorized, lazy-decoding, zero-copy CSV parser.
 
+[Benchmarks](https://lazycsv.contentstech.com)
+
 ## Primary Focuses
 
 - **Vectorized**: The parser utilizes SIMD operations, therefore is very performant.

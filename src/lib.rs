@@ -1,5 +1,7 @@
 //! The `lazycsv` crate provides a performant CSV parser.
 //!
+//! [Benchmarks](https://lazycsv.contentstech.com)
+//!
 //! # Primary Focuses
 //!
 //! - **Vectorized**: The parser utilizes SIMD operations, therefore is very performant.
