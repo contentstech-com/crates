@@ -29,6 +29,7 @@ jobs:
           output-file-path: output.txt
           github-token: ${{ secrets.GITHUB_TOKEN }}
           save-data-file: ${{ github.ref_name == 'main' }}
+          auto-push: true
           alert-threshold: "120%"
           comment-always: true
           fail-on-alert: true
