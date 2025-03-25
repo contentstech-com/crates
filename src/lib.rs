@@ -33,6 +33,8 @@
 //! # Examples
 //!
 //! ```
+//! # #[cfg(feature = "alloc")]
+//! # {
 //! use lazycsv::{Csv, CsvIterItem};
 //!
 //! // Iterating over rows
@@ -54,6 +56,7 @@
 //!         println!("{}", cell.try_as_str()?);
 //!     }
 //! }
+//! # }
 //! # Ok::<(), Box<dyn std::error::Error>>(())
 //! ```
 //!
@@ -143,12 +146,15 @@ impl<'a, const SEP: u8> Csv<'a, SEP> {
     /// # Example
     ///
     /// ```
+    /// # #[cfg(feature = "alloc")]
+    /// # {
     /// use lazycsv::Csv;
     ///
     /// for row in Csv::new(b"a,b,c\n1,2,3").into_rows() {
     ///     let [first, second, third] = row?;
     ///     println!("{}, {}, {}", first.try_as_str()?, second.try_as_str()?, third.try_as_str()?);
     /// }
+    /// # }
     /// # Ok::<(), Box<dyn std::error::Error>>(())
     /// ```
     pub fn into_rows<const COLS: usize>(self) -> CsvRowIter<'a, COLS, SEP> {
@@ -370,11 +376,11 @@ pub struct Cell<'a> {
     pub buf: &'a [u8],
 }
 
+#[cfg(feature = "alloc")]
 impl<'a> Cell<'a> {
     /// Converts the cell to a string.
     ///
     /// Calling this function performs a UTF-8 validation and dequotes the cell if necessary.
-    #[cfg(feature = "alloc")]
     pub fn try_as_str(&self) -> Result<Cow<'a, str>, core::str::Utf8Error> {
         core::str::from_utf8(self.buf).map(|s| {
             // SAFETY: since `s.as_bytes()` is guaranteed to be valid UTF-8, it's also guaranteed that the first character is '"' if the first byte is b'"' due to UTF-8 representing ASCII characters as-is.
