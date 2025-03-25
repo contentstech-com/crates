@@ -327,7 +327,7 @@ impl<'a, const COLS: usize, const SEP: u8> Iterator for CsvRowIter<'a, COLS, SEP
                     return Some(Err(RowIterError::ColumnCountSmallerThanExpected {
                         expected: COLS,
                         actual: i - 1,
-                    }))
+                    }));
                 }
                 None => return None,
             }
