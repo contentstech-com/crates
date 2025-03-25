@@ -1,10 +1,9 @@
-name: Run Checks
+name: check
 on: push
 
 jobs:
-  semantic:
-    name: Semantic Checks
-    runs-on: ubuntu-latest
+  check:
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
