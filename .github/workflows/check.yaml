@@ -11,3 +11,11 @@ jobs:
       - run: cargo fmt -- --check
       - run: cargo clippy --no-deps -- -D warnings
       - run: cargo test
+
+        # no_std, no_alloc
+      - run: cargo clippy --no-default-features --no-deps -- -D warnings
+      - run: cargo test --no-default-features
+
+        # no_std
+      - run: cargo clippy --no-default-features -F alloc --no-deps -- -D warnings
+      - run: cargo test --no-default-features -F alloc
