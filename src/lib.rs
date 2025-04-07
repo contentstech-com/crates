@@ -198,8 +198,50 @@ impl<'a, const SEP: u8> Csv<'a, SEP> {
         self.state = IterState::Cell(start);
         self
     }
+
+    /// Returns the current byte position of the parser within the input buffer.
+    ///
+    /// This indicates the starting position of the *next* item (cell or line break)
+    /// to be parsed. If the iteration is finished, it returns the length of the buffer.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use lazycsv::{Csv, CsvIterItem};
+    ///
+    /// let data = b"aaa,bbb\n100,200";
+    /// let mut csv = Csv::new(data);
+    ///
+    /// assert_eq!(csv.position(), 0); // Start position
+    ///
+    /// let _ = csv.next(); // Yields Cell('aaa')
+    /// assert_eq!(csv.position(), 4); // Position after 'aaa,' (start of 'b')
+    ///
+    /// let _ = csv.next(); // Yields Cell('bbb')
+    /// assert_eq!(csv.position(), 8); // Position after 'bbb\n' (start of '1')
+    ///
+    /// let _ = csv.next(); // Yields LineEnd
+    /// assert_eq!(csv.position(), 8); // Position after 'bbb\n' (start of '1')
+    ///
+    /// let _ = csv.next(); // Yields Cell('100')
+    /// assert_eq!(csv.position(), 12); // Position after '100,' (start of '2')
+    ///
+    /// let _ = csv.next(); // Yields Cell('200')
+    /// assert_eq!(csv.position(), 15); // Position after '200' (end of buffer)
+    ///
+    /// assert!(csv.next().is_none()); // End of iteration
+    /// assert_eq!(csv.position(), data.len()); // Position at the end
+    /// ```
+    pub fn position(&self) -> usize {
+        match self.state {
+            IterState::Cell(pos) => pos,
+            IterState::LineEnd(pos) => pos + 1, // The next item starts after the newline character
+            IterState::Done => self.buf.len(),
+        }
+    }
 }
 
+/// Expected next item in the CSV parser.
 #[derive(Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug)]
 enum IterState {
     Cell(usize),
