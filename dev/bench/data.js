@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1742901766316,
+  "lastUpdate": 1744012196238,
   "repoUrl": "https://github.com/contentstech-com/lazycsv",
   "entries": {
     "Rust Benchmark": [
@@ -269,6 +269,60 @@ window.BENCHMARK_DATA = {
             "name": "Parsers/csv",
             "value": 282126281,
             "range": "± 1059396",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "simnalamburt@gmail.com",
+            "name": "Jihyeon Kim",
+            "username": "simnalamburt"
+          },
+          "committer": {
+            "email": "simnalamburt@gmail.com",
+            "name": "Jihyeon Kim",
+            "username": "simnalamburt"
+          },
+          "distinct": false,
+          "id": "80f1bddbf02509b7c53589d6baf2e7bda7e7b100",
+          "message": "src/lib.rs: Implement Csv::position()",
+          "timestamp": "2025-04-07T16:04:51+09:00",
+          "tree_id": "b220ec0461f10910b4008dd36b09eadf29ec46fe",
+          "url": "https://github.com/contentstech-com/lazycsv/commit/80f1bddbf02509b7c53589d6baf2e7bda7e7b100"
+        },
+        "date": 1744012195837,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "Parsers/lazy_csv",
+            "value": 246961835,
+            "range": "± 2571166",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "Parsers/lazy_csv (into_rows)",
+            "value": 258875322,
+            "range": "± 478407",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "Parsers/lazy_csv (raw)",
+            "value": 161147565,
+            "range": "± 1381503",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "Parsers/lazy_csv (into_rows, raw)",
+            "value": 161331723,
+            "range": "± 217730",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "Parsers/csv",
+            "value": 285572353,
+            "range": "± 1564021",
             "unit": "ns/iter"
           }
         ]
