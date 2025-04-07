@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1744012914889,
+  "lastUpdate": 1744013088525,
   "repoUrl": "https://github.com/contentstech-com/lazycsv",
   "entries": {
     "Rust Benchmark": [
@@ -377,6 +377,60 @@ window.BENCHMARK_DATA = {
             "name": "Parsers/csv",
             "value": 291240095,
             "range": "± 2731749",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "simnalamburt@gmail.com",
+            "name": "Jihyeon Kim",
+            "username": "simnalamburt"
+          },
+          "committer": {
+            "email": "simnalamburt@gmail.com",
+            "name": "Jihyeon Kim",
+            "username": "simnalamburt"
+          },
+          "distinct": true,
+          "id": "2713e5b1fc899320217b3ace79d3f458b0b037ca",
+          "message": "v0.1.1",
+          "timestamp": "2025-04-07T17:00:42+09:00",
+          "tree_id": "46d21d78e81e7d9baa57005f993ae60bac2d8146",
+          "url": "https://github.com/contentstech-com/lazycsv/commit/2713e5b1fc899320217b3ace79d3f458b0b037ca"
+        },
+        "date": 1744013087628,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "Parsers/lazy_csv",
+            "value": 247114229,
+            "range": "± 2218218",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "Parsers/lazy_csv (into_rows)",
+            "value": 257966393,
+            "range": "± 4046992",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "Parsers/lazy_csv (raw)",
+            "value": 161022941,
+            "range": "± 320666",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "Parsers/lazy_csv (into_rows, raw)",
+            "value": 160775576,
+            "range": "± 272880",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "Parsers/csv",
+            "value": 285780745,
+            "range": "± 4514053",
             "unit": "ns/iter"
           }
         ]
