@@ -1,5 +1,10 @@
 lazycsv
 ========
+
+[![Crates.io](https://img.shields.io/crates/v/lazycsv.svg)](https://crates.io/crates/lazycsv)
+[![Documentation](https://docs.rs/lazycsv/badge.svg)](https://docs.rs/lazycsv)
+[![License](https://img.shields.io/crates/l/lazycsv.svg)](COPYRIGHT)
+
 Vectorized, lazy-decoding, zero-copy CSV parser.
 
 [Benchmarks](https://lazycsv.contentstech.com)
