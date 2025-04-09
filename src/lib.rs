@@ -137,7 +137,6 @@ impl<'a> Csv<'a> {
             state: IterState::Cell(0),
         }
     }
-}
 
 impl<'a> Csv<'a> {
     /// Create a wrapper iterator that buffers the cells per row.
