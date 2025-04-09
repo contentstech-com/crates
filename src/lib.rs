@@ -93,13 +93,10 @@ use thiserror::Error;
 /// A stateful CSV parser.
 ///
 /// See the [crate-level documentation](crate) for more details.
-///
-/// ### `const` Parameters
-///
-/// - `SEP`: The separator character in `u8`, defaults to `b','`.
 #[derive(Copy, Clone, Eq, PartialEq, Hash, Debug)]
-pub struct Csv<'a, const SEP: u8 = b','> {
+pub struct Csv<'a> {
     buf: &'a [u8],
+    separator: u8,
     state: IterState,
 }
 
@@ -118,6 +115,7 @@ impl<'a> Csv<'a> {
     pub fn new(buf: &'a [u8]) -> Csv<'a> {
         Csv {
             buf,
+            separator: b',',
             state: IterState::Cell(0),
         }
     }
@@ -130,17 +128,18 @@ impl<'a> Csv<'a> {
     /// use lazycsv::Csv;
     ///
     /// // Parsing TSV instead of CSV
-    /// let tsv = Csv::with_separator::<b'\t'>(b"a\tb\tc\n1\t2\t3");
+    /// let tsv = Csv::with_separator(b"a\tb\tc\n1\t2\t3", b'\t');
     /// ```
-    pub fn with_separator<const SEP: u8>(buf: &'a [u8]) -> Csv<'a, SEP> {
+    pub fn with_separator(buf: &'a [u8], separator: u8) -> Csv<'a> {
         Csv {
             buf,
+            separator,
             state: IterState::Cell(0),
         }
     }
 }
 
-impl<'a, const SEP: u8> Csv<'a, SEP> {
+impl<'a> Csv<'a> {
     /// Create a wrapper iterator that buffers the cells per row.
     ///
     /// # Example
@@ -157,7 +156,7 @@ impl<'a, const SEP: u8> Csv<'a, SEP> {
     /// # }
     /// # Ok::<(), Box<dyn std::error::Error>>(())
     /// ```
-    pub fn into_rows<const COLS: usize>(self) -> CsvRowIter<'a, COLS, SEP> {
+    pub fn into_rows<const COLS: usize>(self) -> CsvRowIter<'a, COLS> {
         CsvRowIter { csv: self }
     }
 
@@ -257,7 +256,7 @@ pub enum CsvIterItem<'a> {
     LineEnd,
 }
 
-impl<'a, const SEP: u8> Iterator for Csv<'a, SEP> {
+impl<'a> Iterator for Csv<'a> {
     type Item = CsvIterItem<'a>;
 
     fn next(&mut self) -> Option<Self::Item> {
@@ -285,7 +284,8 @@ impl<'a, const SEP: u8> Iterator for Csv<'a, SEP> {
                 continue;
             }
 
-            let Some(index_relative) = memchr3(SEP, b'\n', b'"', &self.buf[cursor..]) else {
+            let Some(index_relative) = memchr3(self.separator, b'\n', b'"', &self.buf[cursor..])
+            else {
                 self.state = IterState::Done;
                 return None;
             };
@@ -327,13 +327,12 @@ impl<'a, const SEP: u8> Iterator for Csv<'a, SEP> {
 /// ### `const` Parameters
 ///
 /// - `COLS`: The number of columns in the CSV.
-/// - `SEP`: The separator character in `u8`, defaults to `b','`.
 #[derive(Copy, Clone, Eq, PartialEq, Hash, Debug)]
-pub struct CsvRowIter<'a, const COLS: usize, const SEP: u8> {
-    csv: Csv<'a, SEP>,
+pub struct CsvRowIter<'a, const COLS: usize> {
+    csv: Csv<'a>,
 }
 
-impl<const COLS: usize, const SEP: u8> CsvRowIter<'_, COLS, SEP> {
+impl<const COLS: usize> CsvRowIter<'_, COLS> {
     /// Skips the first `n` rows.
     ///
     /// Using this function is more efficient than calling [`Iterator::skip()`],
@@ -360,7 +359,7 @@ impl<const COLS: usize, const SEP: u8> CsvRowIter<'_, COLS, SEP> {
     }
 }
 
-impl<'a, const COLS: usize, const SEP: u8> Iterator for CsvRowIter<'a, COLS, SEP> {
+impl<'a, const COLS: usize> Iterator for CsvRowIter<'a, COLS> {
     type Item = Result<[Cell<'a>; COLS], RowIterError>;
 
     fn next(&mut self) -> Option<Self::Item> {
