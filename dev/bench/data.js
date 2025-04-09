@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1744013088525,
+  "lastUpdate": 1744202571929,
   "repoUrl": "https://github.com/contentstech-com/lazycsv",
   "entries": {
     "Rust Benchmark": [
@@ -431,6 +431,60 @@ window.BENCHMARK_DATA = {
             "name": "Parsers/csv",
             "value": 285780745,
             "range": "± 4514053",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "me@xiniha.dev",
+            "name": "Iha Shin (신의하)",
+            "username": "XiNiHa"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "597bc6d58c2e402d8000c17246f50f49721af007",
+          "message": "feat!: replace SEP const parameter with runtime value (#14)\n\nCo-authored-by: Jihyeon Kim (김지현) <simnalamburt@gmail.com>",
+          "timestamp": "2025-04-09T21:40:45+09:00",
+          "tree_id": "e95c95616a94bc62936a8cab62ff202ac990fb24",
+          "url": "https://github.com/contentstech-com/lazycsv/commit/597bc6d58c2e402d8000c17246f50f49721af007"
+        },
+        "date": 1744202571624,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "Parsers/lazy_csv",
+            "value": 248544322,
+            "range": "± 2330464",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "Parsers/lazy_csv (into_rows)",
+            "value": 261907347,
+            "range": "± 1681043",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "Parsers/lazy_csv (raw)",
+            "value": 163739546,
+            "range": "± 429879",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "Parsers/lazy_csv (into_rows, raw)",
+            "value": 163653400,
+            "range": "± 356038",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "Parsers/csv",
+            "value": 282732265,
+            "range": "± 3215123",
             "unit": "ns/iter"
           }
         ]
