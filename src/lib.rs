@@ -138,7 +138,6 @@ impl<'a> Csv<'a> {
         }
     }
 
-impl<'a> Csv<'a> {
     /// Create a wrapper iterator that buffers the cells per row.
     ///
     /// # Example
