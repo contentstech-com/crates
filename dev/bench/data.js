@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1744272301465,
+  "lastUpdate": 1744280642521,
   "repoUrl": "https://github.com/contentstech-com/lazycsv",
   "entries": {
     "Rust Benchmark": [
@@ -589,6 +589,56 @@ window.BENCHMARK_DATA = {
             "name": "Parsers/csv",
             "value": 281841538,
             "range": "± 589359",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "name": "contentstech-com",
+            "username": "contentstech-com"
+          },
+          "committer": {
+            "name": "contentstech-com",
+            "username": "contentstech-com"
+          },
+          "id": "4b95fcae3a328bcf4beb58dd55a5de23a000c399",
+          "message": "src/lib.rs: Fix wrong dequote behavior",
+          "timestamp": "2025-04-10T08:03:05Z",
+          "url": "https://github.com/contentstech-com/lazycsv/pull/16/commits/4b95fcae3a328bcf4beb58dd55a5de23a000c399"
+        },
+        "date": 1744280642264,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "Parsers/lazy_csv",
+            "value": 594092698,
+            "range": "± 4528938",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "Parsers/lazy_csv (into_rows)",
+            "value": 589008411,
+            "range": "± 1455403",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "Parsers/lazy_csv (raw)",
+            "value": 164412634,
+            "range": "± 452626",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "Parsers/lazy_csv (into_rows, raw)",
+            "value": 162673012,
+            "range": "± 780498",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "Parsers/csv",
+            "value": 283079914,
+            "range": "± 1106488",
             "unit": "ns/iter"
           }
         ]
