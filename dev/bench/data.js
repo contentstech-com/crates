@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1744202571929,
+  "lastUpdate": 1744269477063,
   "repoUrl": "https://github.com/contentstech-com/lazycsv",
   "entries": {
     "Rust Benchmark": [
@@ -485,6 +485,56 @@ window.BENCHMARK_DATA = {
             "name": "Parsers/csv",
             "value": 282732265,
             "range": "± 3215123",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "name": "contentstech-com",
+            "username": "contentstech-com"
+          },
+          "committer": {
+            "name": "contentstech-com",
+            "username": "contentstech-com"
+          },
+          "id": "efc4188c8da6dee79f7a53389655e2c9b273b94a",
+          "message": "src/lib.rs: Implement missing common traits",
+          "timestamp": "2025-04-09T12:44:38Z",
+          "url": "https://github.com/contentstech-com/lazycsv/pull/15/commits/efc4188c8da6dee79f7a53389655e2c9b273b94a"
+        },
+        "date": 1744269476746,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "Parsers/lazy_csv",
+            "value": 248134376,
+            "range": "± 3370572",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "Parsers/lazy_csv (into_rows)",
+            "value": 260048611,
+            "range": "± 260151",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "Parsers/lazy_csv (raw)",
+            "value": 164202313,
+            "range": "± 361256",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "Parsers/lazy_csv (into_rows, raw)",
+            "value": 164082599,
+            "range": "± 324410",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "Parsers/csv",
+            "value": 283379413,
+            "range": "± 1104945",
             "unit": "ns/iter"
           }
         ]
