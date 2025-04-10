@@ -247,6 +247,7 @@ enum IterState {
 }
 
 /// An item yielded by [`Csv`], indicates either a cell or a line break.
+#[derive(Clone, Eq, PartialEq, Hash, Debug)]
 pub enum CsvIterItem<'a> {
     /// The row continues with a cell.
     Cell(Cell<'a>),
@@ -389,7 +390,7 @@ impl<'a, const COLS: usize> Iterator for CsvRowIter<'a, COLS> {
 }
 
 /// Errors returned by [`CsvRowIter`].
-#[derive(Error, Debug)]
+#[derive(Error, Clone, Eq, PartialEq, Hash, Debug)]
 pub enum RowIterError {
     /// Found smaller number of columns than expected.
     #[error("expected {expected} columns, but new row started after parsing {actual} columns")]
