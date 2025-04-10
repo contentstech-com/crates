@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1744269477063,
+  "lastUpdate": 1744272301465,
   "repoUrl": "https://github.com/contentstech-com/lazycsv",
   "entries": {
     "Rust Benchmark": [
@@ -535,6 +535,60 @@ window.BENCHMARK_DATA = {
             "name": "Parsers/csv",
             "value": 283379413,
             "range": "± 1104945",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "me@xiniha.dev",
+            "name": "Iha Shin",
+            "username": "XiNiHa"
+          },
+          "committer": {
+            "email": "me@xiniha.dev",
+            "name": "Iha Shin (신의하)",
+            "username": "XiNiHa"
+          },
+          "distinct": true,
+          "id": "04163375b1f9c63144ffb41df898d19202e61f38",
+          "message": "src/lib.rs: Implement missing common traits",
+          "timestamp": "2025-04-10T17:03:01+09:00",
+          "tree_id": "83cfc7c7b2bf06d4effe272dcbcf35875d195238",
+          "url": "https://github.com/contentstech-com/lazycsv/commit/04163375b1f9c63144ffb41df898d19202e61f38"
+        },
+        "date": 1744272300846,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "Parsers/lazy_csv",
+            "value": 248766887,
+            "range": "± 763665",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "Parsers/lazy_csv (into_rows)",
+            "value": 261886292,
+            "range": "± 2456686",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "Parsers/lazy_csv (raw)",
+            "value": 164096234,
+            "range": "± 696342",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "Parsers/lazy_csv (into_rows, raw)",
+            "value": 163740411,
+            "range": "± 592792",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "Parsers/csv",
+            "value": 281841538,
+            "range": "± 589359",
             "unit": "ns/iter"
           }
         ]
