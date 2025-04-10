@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1744280642521,
+  "lastUpdate": 1744285934750,
   "repoUrl": "https://github.com/contentstech-com/lazycsv",
   "entries": {
     "Rust Benchmark": [
@@ -639,6 +639,60 @@ window.BENCHMARK_DATA = {
             "name": "Parsers/csv",
             "value": 283079914,
             "range": "± 1106488",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "me@xiniha.dev",
+            "name": "Iha Shin",
+            "username": "XiNiHa"
+          },
+          "committer": {
+            "email": "me@xiniha.dev",
+            "name": "Iha Shin",
+            "username": "XiNiHa"
+          },
+          "distinct": false,
+          "id": "1a6ef22453af83b2ba434581462ca0405c068538",
+          "message": "ci: Fix benchmark results from PR getting published",
+          "timestamp": "2025-04-10T19:04:47+09:00",
+          "tree_id": "3d19b3a99682337acd3479ff68bb694e50eacf96",
+          "url": "https://github.com/contentstech-com/lazycsv/commit/1a6ef22453af83b2ba434581462ca0405c068538"
+        },
+        "date": 1744285934483,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "Parsers/lazy_csv",
+            "value": 250842580,
+            "range": "± 1470820",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "Parsers/lazy_csv (into_rows)",
+            "value": 259915287,
+            "range": "± 662592",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "Parsers/lazy_csv (raw)",
+            "value": 164505627,
+            "range": "± 179619",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "Parsers/lazy_csv (into_rows, raw)",
+            "value": 163848963,
+            "range": "± 348084",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "Parsers/csv",
+            "value": 282709773,
+            "range": "± 2070884",
             "unit": "ns/iter"
           }
         ]
