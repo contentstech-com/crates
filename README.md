@@ -11,6 +11,19 @@ Vectorized, lazy-decoding, zero-copy CSV parser.
 
 ## Primary Focuses
 
+lazycsv is a parser that performs optimistic optimization. It’s primarily
+optimized for parsing CSV input that is either unquoted or only minimally
+quoted—especially when dequoting is unnecessary. In such cases, it can
+outperform [BurntSushi/rust-csv] by around 20% in terms of performance.
+
+However, if the input is expected to require dequotation, it’s generally better
+to use [BurntSushi/rust-csv], which performs eager dequoting during the parsing
+phase. Since lazycsv is a lazy parser, it defers dequoting entirely. If
+dequotation is performed later, this effectively results in scanning the input
+twice, which leads to a performance penalty.
+
+[BurntSushi/rust-csv]: https://github.com/BurntSushi/rust-csv
+
 - **Vectorized**: The parser utilizes SIMD operations, therefore is very performant.
 - **Minimal hidden costs**: Every API doesn't bring any invisible overheads, and each operation only does what it needs to do.
 - **Zero copy, zero allocation by default**: The parser doesn't allocate any memory during parsing and only performs allocation when dequoting each cell.

@@ -4,6 +4,19 @@
 //!
 //! # Primary Focuses
 //!
+//! lazycsv is a parser that performs optimistic optimization. It’s primarily
+//! optimized for parsing CSV input that is either unquoted or only minimally
+//! quoted—especially when dequoting is unnecessary. In such cases, it can
+//! outperform [BurntSushi/rust-csv] by around 20% in terms of performance.
+//!
+//! However, if the input is expected to require dequotation, it’s generally better
+//! to use [BurntSushi/rust-csv], which performs eager dequoting during the parsing
+//! phase. Since lazycsv is a lazy parser, it defers dequoting entirely. If
+//! dequotation is performed later, this effectively results in scanning the input
+//! twice, which leads to a performance penalty.
+//!
+//! [BurntSushi/rust-csv]: https://github.com/BurntSushi/rust-csv
+//!
 //! - **Vectorized**: The parser utilizes SIMD operations, therefore is very performant.
 //! - **Minimal hidden costs**: Every API doesn't bring any invisible overheads, and each operation only does what it needs to do.
 //! - **Zero copy, zero allocation by default**: The parser doesn't allocate any memory during parsing and only performs allocation when dequoting each cell.
@@ -419,9 +432,22 @@ impl<'a> Cell<'a> {
     ///
     /// Calling this function performs a UTF-8 validation and dequotes the cell if necessary.
     ///
-    /// Since dequoting is very inefficient in `lazycsv` compared to other crates like `csv`,
-    /// it is advised to either access the underlying buffer directly
-    /// or use `try_as_str` only with inputs that have little amount of quotes.
+    /// # Performance
+    ///
+    /// As noted in the [crate-level documentation][crate], the performance benefits of lazycsv are
+    /// most effective when dequoting is not required. This is because lazycsv does not perform
+    /// dequoting during the parsing phase, and if dequoting is later requested, it incurs a
+    /// performance penalty from scanning the input twice.
+    ///
+    /// Therefore, when using lazycsv, it is recommended—whenever possible—to avoid dequoting and
+    /// instead access the underlying buffer directly, or limit dequoting to only a small subset of
+    /// cells.
+    ///
+    /// If that’s not feasible and extensive dequoting is necessary, consider using an eager parser
+    /// like [BurntSushi/rust-csv], which performs dequoting during parsing and avoids this
+    /// overhead.
+    ///
+    /// [BurntSushi/rust-csv]: https://github.com/BurntSushi/rust-csv
     pub fn try_as_str(&self) -> Result<Cow<'a, str>, core::str::Utf8Error> {
         core::str::from_utf8(self.buf).map(|s| {
             // SAFETY: since `s.as_bytes()` is guaranteed to be valid UTF-8, it's also guaranteed that the first character is '"' if the first byte is b'"' due to UTF-8 representing ASCII characters as-is.
