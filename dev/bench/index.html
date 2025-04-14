@@ -169,23 +169,20 @@
         }
 
         function renderAllChars(dataSets) {
-
           function renderGraph(parent, name, dataset) {
             const canvas = document.createElement('canvas');
             canvas.className = 'benchmark-chart';
             parent.appendChild(canvas);
 
-            const color = toolColors[dataset.length > 0 ? dataset[0].tool : '_'];
+            const datasetEntries = Object.entries(dataset);
             const data = {
-              labels: dataset.map(d => d.commit.id.slice(0, 7)),
-              datasets: [
-                {
-                  label: name,
-                  data: dataset.map(d => d.bench.value),
-                  borderColor: color,
-                  backgroundColor: color + '60', // Add alpha for #rrggbbaa
-                }
-              ],
+              labels: datasetEntries[0][1].map(d => d.commit.id.slice(0, 7)),
+              datasets: datasetEntries.map(([name, dataset], i) => ({
+                label: name,
+                data: dataset.map(d => d.bench.value),
+                borderColor: Object.values(toolColors)[i],
+                backgroundColor: Object.values(toolColors)[i] + '60', // Add alpha for #rrggbbaa
+              })),
             };
             const options = {
               scales: {
@@ -193,7 +190,7 @@
                   {
                     scaleLabel: {
                       display: true,
-                      labelString: 'commit',
+                      labelString: name,
                     },
                   }
                 ],
@@ -201,7 +198,7 @@
                   {
                     scaleLabel: {
                       display: true,
-                      labelString: dataset.length > 0 ? dataset[0].bench.unit : '',
+                      labelString: datasetEntries[0]?.[1]?.[0]?.bench.unit ?? '',
                     },
                     ticks: {
                       beginAtZero: true,
@@ -211,14 +208,16 @@
               },
               tooltips: {
                 callbacks: {
-                  afterTitle: items => {
-                    const {index} = items[0];
-                    const data = dataset[index];
-                    return '\n' + data.commit.message + '\n\n' + data.commit.timestamp + ' committed by @' + data.commit.committer.username + '\n';
+                  title: items => {
+                    const {datasetIndex, index} = items[0];
+                    const name = datasetEntries[datasetIndex]?.[0];
+                    const data = datasetEntries[datasetIndex]?.[1]?.[index];
+                    return `${name}\n\n${data.commit.message} (${data.commit.id.slice(0, 7)})\n\n`
+                      + `${new Date(data.commit.timestamp).toLocaleString()} committed by @${data.commit.committer.username}`;
                   },
                   label: item => {
                     let label = item.value;
-                    const { range, unit } = dataset[item.index].bench;
+                    const { range, unit } = datasetEntries[0]?.[1]?.[item.index]?.bench;
                     label += ' ' + unit;
                     if (range) {
                       label += ' (' + range + ')';
@@ -226,7 +225,7 @@
                     return label;
                   },
                   afterLabel: item => {
-                    const { extra } = dataset[item.index].bench;
+                    const { extra } = datasetEntries[0]?.[1]?.[item.index]?.bench;
                     return extra ? '\n' + extra : '';
                   }
                 }
@@ -237,7 +236,7 @@
                 }
                 // XXX: Undocumented. How can we know the index?
                 const index = activeElems[0]._index;
-                const url = dataset[index].commit.url;
+                const url = datasetEntries[0]?.[1]?.[index]?.commit?.url;
                 window.open(url, '_blank');
               },
             };
@@ -263,8 +262,9 @@
             graphsElem.className = 'benchmark-graphs';
             setElem.appendChild(graphsElem);
 
-            for (const [benchName, benches] of benchSet.entries()) {
-              renderGraph(graphsElem, benchName, benches)
+            const grouped = Object.groupBy(benchSet.entries(), ([name, data]) => name.split('/')[0])
+            for (const [benchName, benches] of Object.entries(grouped)) {
+              renderGraph(graphsElem, benchName, Object.fromEntries(benches.map(([name, data]) => [name.split("/")[1], data])))
             }
           }
 
