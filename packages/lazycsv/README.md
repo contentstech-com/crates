@@ -3,7 +3,7 @@ lazycsv
 
 [![Crates.io](https://img.shields.io/crates/v/lazycsv.svg)](https://crates.io/crates/lazycsv)
 [![Documentation](https://docs.rs/lazycsv/badge.svg)](https://docs.rs/lazycsv)
-[![License](https://img.shields.io/crates/l/lazycsv.svg)][COPYRIGHT]
+[![License](https://img.shields.io/crates/l/lazycsv.svg)](../../COPYRIGHT)
 
 Vectorized, lazy-decoding, zero-copy CSV parser.
 
@@ -74,14 +74,3 @@ for item in csv2 {
     }
 }
 ```
-
-&nbsp;
-
---------
-
-*lazycsv* is primarily distributed under the terms of both the [Apache License
-(Version 2.0)] and the [MIT license]. See [COPYRIGHT] for details.
-
-[MIT license]: ../../LICENSE-MIT
-[Apache License (Version 2.0)]: ../../LICENSE-APACHE
-[COPYRIGHT]: ../../COPYRIGHT
