@@ -1,3 +1,4 @@
+#[cfg(feature = "alloc")]
 use lazycsv::{Cell, Csv, CsvIterItem};
 
 #[cfg(feature = "alloc")]
