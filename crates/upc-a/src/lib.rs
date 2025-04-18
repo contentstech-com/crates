@@ -1,4 +1,77 @@
+//! # upc-a
+//!
+//! A Rust library for parsing, validating, and working with [UPC-A (Universal Product Code)](https://www.gs1us.org/upcs-barcodes-prefixes/guide-to-upcs).
+//!
+//! ## What is UPC-A?
+//!
+//! UPC-A is a 12-digit number used to identify a product. Each UPC-A number consists of 11 digits
+//! plus a check digit. The check digit is calculated using a specific algorithm based on the first
+//! 11 digits.
+//!
+//! ## Features
+//!
+//! - Memory-efficient representation (8 bytes)
+//! - Format-aware serialization/deserialization with [serde]
+//! - Binary serialization support via [bitcode]
+//! - Comprehensive error handling for invalid input
+//! - No-std compatible, zero heap allocation
+//!
+//! [serde]: https://docs.rs/serde
+//! [bitcode]: https://docs.rs/bitcode
+//!
+//! ## Usage
+//!
+//! ```rust
+//! use upc_a::UpcA;
+//! use std::str::FromStr;
+//!
+//! // From numeric UPC-A code
+//! let upc_a = UpcA::from_code(123456789012)?;
+//! # assert_eq!(upc_a.to_code(), 123456789012);
+//!
+//! // From string representation using FromStr trait
+//! let upc_a = UpcA::from_str("123456789012")?;
+//! # assert_eq!(upc_a.to_code(), 123456789012);
+//!
+//! // From a compact binary format
+//! let upc_a = UpcA::from_bytes(b"\x14\x1A\x99\xBE\x1C")?;
+//!
+//! // Get the UPC-A code as a numeric value
+//! assert_eq!(upc_a.to_code(), 123456789012);
+//!
+//! // Display a UPC-A code
+//! assert_eq!(upc_a.to_string(), "123456789012");
+//!
+//! // Convert to a compact binary format
+//! assert_eq!(upc_a.to_bytes(), *b"\x14\x1A\x99\xBE\x1C");
+//! # anyhow::Ok::<()>(())
+//! ```
+//!
+//! ### Serde integration
+//!
+//! ```rust
+//! # #[cfg(feature = "serde")]
+//! # {
+//! use upc_a::UpcA;
+//! use serde::{Deserialize, Serialize};
+//!
+//! // Define a struct with a UPC-A code
+//! #[derive(Serialize, Deserialize)]
+//! struct Product {
+//!     name: String,
+//!     upc_a: UpcA,
+//! }
+//!
+//! // For human-readable formats like JSON and TOML, ISRCs are serialized as strings
+//! let json = r#"{"name":"Meme cat plush","upc_a":123456789012}"#;
+//! let product: Product = serde_json::from_str(json)?;
+//! # assert_eq!(product.upc_a.to_code(), 123456789012);
+//! # }
+//! # anyhow::Ok::<()>(())
+//! ```
+
 #![no_std]
+#![deny(missing_docs)]
 
 use core::fmt::{self, Display, Formatter};
 use core::num::ParseIntError;
@@ -16,9 +89,28 @@ use thiserror::Error;
 
 /// Universal Product Code version A (UPC-A)
 ///
+/// A UPC-A code uniquely identifies a product using a 12-digit number. The last digit is a check
+/// digit.
+///
+/// # Examples
+///
+/// ```
+/// use upc_a::UpcA;
+///
+/// // Parse an ISRC from a string
+/// let upc_a = UpcA::from_code(123456789012)?;
+///
+/// // Retrieve the numeric value
+/// assert_eq!(upc_a.to_code(), 123456789012);
+///
+/// // Display a formatted ISRC
+/// assert_eq!(upc_a.to_string(), "123456789012");
+/// # anyhow::Ok::<()>(())
+/// ```
+///
 /// ###### References
-/// - https://en.wikipedia.org/wiki/Universal_Product_Code
-/// - https://www.gtin.info/upc/
+/// - <https://en.wikipedia.org/wiki/Universal_Product_Code>
+/// - <https://www.gtin.info/upc/>
 #[derive(Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug)]
 #[cfg_attr(feature = "bitcode", derive(Encode, Decode))]
 pub struct UpcA(
@@ -31,17 +123,60 @@ pub struct UpcA(
     u64,
 );
 
+#[test]
+fn test_upc_a_size() {
+    assert_eq!(size_of::<UpcA>(), 8);
+}
+
+/// Error that can occur during parsing a UPC-A code.
+///
+/// This enum represents all the possible errors that can occur when validating or parsing
+/// a UPC-A from various input formats.
 #[derive(Clone, Eq, PartialEq, Debug, Error)]
 pub enum UpcAParseError {
+    /// The input is too large to be a valid UPC-A code.
     #[error("Input is too large (expected 0 <= input <= 999_999_999_999, found {found})")]
-    InputTooLarge { found: u64 },
+    InputTooLarge {
+        /// The (invalid) input value that was too large.
+        found: u64,
+    },
+
+    /// The input string is not a valid integer.
     #[error(transparent)]
     ParseIntError(#[from] ParseIntError),
+
+    /// The checksum digit is invalid.
     #[error("Checksum failed (expected 0, found {found})")]
-    ChecksumFailed { found: u8 },
+    ChecksumFailed {
+        /// The (invalid) checksum digit that was found.
+        found: u8,
+    },
 }
 
 impl UpcA {
+    /// Creates an [`UpcA`] from a numeric code.
+    ///
+    /// The input must be a 12-digit number, and the last digit must be a valid checksum digit.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use upc_a::UpcA;
+    ///
+    /// // Valid UPC-A
+    /// let upc_a = UpcA::from_code(123456789012)?;
+    /// assert_eq!(upc_a.to_string(), "123456789012");
+    ///
+    /// // Invalid UPC-A (incorrect checksum)
+    /// assert!(UpcA::from_code(123456789010).is_err());
+    /// # anyhow::Ok::<()>(())
+    /// ```
+    ///
+    /// # Errors
+    ///
+    /// Returns an `UpcAParseError` if:
+    /// - The integer value exceeds the maximum allowed value (999,999,999,999)
+    /// - The checksum digit is invalid
     pub const fn from_code(n: u64) -> Result<Self, UpcAParseError> {
         if n > 999_999_999_999 {
             return Err(UpcAParseError::InputTooLarge { found: n });
@@ -83,11 +218,68 @@ impl UpcA {
         Ok(Self(n))
     }
 
+    /// Returns the decimal integer value of a [`UpcA`].
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use upc_a::UpcA;
+    /// use std::str::FromStr;
+    ///
+    /// let upc_a = UpcA::from_str("123456789012")?;
+    /// assert_eq!(upc_a.to_code(), 123456789012);
+    /// # anyhow::Ok::<()>(())
+    /// ```
+    pub const fn to_code(self) -> u64 {
+        self.0
+    }
+
+    /// Creates a [`UpcA`] from a 5-byte binary representation.
+    ///
+    /// This method deserializes a UPC-A code from its compact binary representation, which is
+    /// primarily useful for binary serialization formats.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use upc_a::UpcA;
+    ///
+    /// let bytes = [0x14, 0x1A, 0x99, 0xBE, 0x1C];
+    /// let upc_a = UpcA::from_bytes(&bytes)?;
+    /// assert_eq!(upc_a.to_code(), 123456789012);
+    /// # anyhow::Ok::<()>(())
+    /// ```
+    ///
+    /// # Errors
+    ///
+    /// Returns an `UpcAParseError` if:
+    /// - The integer value exceeds the maximum allowed value (999,999,999,999)
+    /// - The checksum digit is invalid
     pub const fn from_bytes(bytes: &[u8; 5]) -> Result<Self, UpcAParseError> {
         let ret = u64::from_le_bytes([bytes[0], bytes[1], bytes[2], bytes[3], bytes[4], 0, 0, 0]);
         Self::from_code(ret)
     }
 
+    /// Converts the [`UpcA`] to its compact 5-byte binary representation.
+    ///
+    /// This method serializes a UPC-A code into a fixed-size array suitable for binary storage or
+    /// transmission. It is the inverse of `from_bytes`.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use upc_a::UpcA;
+    /// use std::str::FromStr;
+    ///
+    /// let upc_a = UpcA::from_code(123456789012)?;
+    /// let bytes = upc_a.to_bytes();
+    /// assert_eq!(bytes, *b"\x14\x1A\x99\xBE\x1C");
+    ///
+    /// // Round-trip conversion
+    /// let round_trip = UpcA::from_bytes(&bytes)?;
+    /// assert_eq!(round_trip, upc_a);
+    /// # anyhow::Ok::<()>(())
+    /// ```
     pub const fn to_bytes(self) -> [u8; 5] {
         [
             self.0 as u8,
@@ -99,6 +291,26 @@ impl UpcA {
     }
 }
 
+/// Implements the [`FromStr`] trait for [`UpcA`] to allow parsing from strings using the `parse`
+/// method.
+///
+/// This implementation delegates to [`UpcA::from_code`].
+///
+/// # Examples
+///
+/// ```
+/// use upc_a::UpcA;
+/// use std::str::FromStr;
+///
+/// // Parse using FromStr
+/// let upc_a = UpcA::from_str("123456789012")?;
+/// # assert_eq!(upc_a.to_code(), 123456789012);
+///
+/// // Or using the more idiomatic parse method
+/// let upc_a: UpcA = "123456789012".parse()?;
+/// # assert_eq!(upc_a.to_code(), 123456789012);
+/// # anyhow::Ok::<()>(())
+/// ```
 impl FromStr for UpcA {
     type Err = UpcAParseError;
 
@@ -107,6 +319,17 @@ impl FromStr for UpcA {
     }
 }
 
+/// Implements the [`Display`] trait for [`UpcA`] to provide a string representation.
+///
+/// # Examples
+///
+/// ```
+/// use upc_a::UpcA;
+///
+/// let upc_a = UpcA::from_code(123456789012)?;
+/// assert_eq!(upc_a.to_string(), "123456789012");
+/// # anyhow::Ok::<()>(())
+/// ```
 impl Display for UpcA {
     fn fmt(&self, f: &mut Formatter) -> fmt::Result {
         write!(f, "{:012}", self.0)
@@ -152,6 +375,28 @@ fn test_upc_a() -> Result<(), UpcAParseError> {
     Ok(())
 }
 
+/// Implements the [`Serialize`] trait for [`UpcA`] to support serialization with serde.
+///
+/// This implementation provides format-aware serialization:
+/// - For human-readable formats (like JSON, TOML): Uses a numeric representation ([`UpcA::to_code`])
+/// - For binary formats (like bincode): Uses the binary representation ([`UpcA::to_bytes`])
+///
+/// # Examples
+///
+/// ```
+/// use upc_a::UpcA;
+/// use std::str::FromStr;
+///
+/// let upc_a = UpcA::from_code(123456789012)?;
+///
+/// // JSON serialization (human-readable)
+/// let json = serde_json::to_string(&upc_a)?;
+/// assert_eq!(json, r#"123456789012"#);
+///
+/// // Bincode serialization (binary)
+/// let binary = bincode::serialize(&upc_a)?;
+/// # anyhow::Ok::<()>(())
+/// ```
 #[cfg(feature = "serde")]
 impl Serialize for UpcA {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
@@ -194,6 +439,28 @@ fn test_upc_a_serialize() -> anyhow::Result<()> {
     Ok(())
 }
 
+/// Implements the [`Deserialize`] trait for [`UpcA`] to support deserialization with serde.
+///
+/// This implementation provides format-aware deserialization:
+/// - For human-readable formats (like JSON, TOML): Expects a number and uses [`UpcA::from_code`]
+/// - For binary formats (like bincode): Expects an 5-byte array and uses [`UpcA::from_bytes`]
+///
+/// # Examples
+///
+/// ```
+/// use upc_a::UpcA;
+/// use serde::Deserialize;
+///
+/// // JSON deserialization (human-readable)
+/// #[derive(Deserialize)]
+/// struct Product {
+///     code: UpcA,
+/// }
+///
+/// let product: Product = serde_json::from_str(r#"{"code":123456789012}"#)?;
+/// # assert_eq!(product.code.to_code(), 123456789012);
+/// # anyhow::Ok::<()>(())
+/// ```
 #[cfg(feature = "serde")]
 impl<'de> Deserialize<'de> for UpcA {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
