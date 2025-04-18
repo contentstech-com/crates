@@ -1,3 +1,9 @@
 [workspace]
 members = ["packages/*"]
 resolver = "3"
+
+[workspace.package]
+authors = ["Iha Shin <me@xiniha.dev>", "Jihyeon Kim <simnalamburt@gmail.com>"]
+edition = "2024"
+license = "Apache-2.0 OR MIT"
+repository = "https://github.com/contentstech-com/crates"

@@ -1,15 +1,14 @@
 [package]
 name = "lazycsv"
 version = "0.2.1"
-authors = ["Iha Shin <me@xiniha.dev>", "Jihyeon Kim <simnalamburt@gmail.com>"]
-edition = "2024"
-description = """
-Vectorized, lazy-decoding, zero-copy CSV parser.
-"""
-repository = "https://github.com/contentstech-com/lazycsv"
-license = "Apache-2.0 OR MIT"
+description = "Vectorized, lazy-decoding, zero-copy CSV parser."
 keywords = ["csv", "simd", "zero-copy", "lazy", "parser"]
 categories = ["no-std", "no-std::no-alloc", "parsing"]
+
+authors.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
 
 [features]
 default = ["std"]
