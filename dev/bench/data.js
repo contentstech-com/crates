@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1744971144976,
+  "lastUpdate": 1744972933871,
   "repoUrl": "https://github.com/contentstech-com/crates",
   "entries": {
     "Rust Benchmark": [
@@ -569,6 +569,120 @@ window.BENCHMARK_DATA = {
             "name": "Randomly quoted/csv",
             "value": 241313654,
             "range": "± 317302",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "simnalamburt@gmail.com",
+            "name": "Jihyeon Kim",
+            "username": "simnalamburt"
+          },
+          "committer": {
+            "email": "simnalamburt@gmail.com",
+            "name": "Jihyeon Kim",
+            "username": "simnalamburt"
+          },
+          "distinct": true,
+          "id": "5f67ee85c1c4512ffb3eb08a0544a41f5936d60f",
+          "message": "Rename packages -> crates",
+          "timestamp": "2025-04-18T19:36:06+09:00",
+          "tree_id": "a8f71cd1870c9519bddc4906bb5250ecfc54b261",
+          "url": "https://github.com/contentstech-com/crates/commit/5f67ee85c1c4512ffb3eb08a0544a41f5936d60f"
+        },
+        "date": 1744972933051,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "No quotes/lazy_csv",
+            "value": 131160177,
+            "range": "± 1546042",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "No quotes/lazy_csv (into_rows)",
+            "value": 145474020,
+            "range": "± 733991",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "No quotes/lazy_csv (raw)",
+            "value": 66194114,
+            "range": "± 174878",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "No quotes/lazy_csv (into_rows, raw)",
+            "value": 70697282,
+            "range": "± 192093",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "No quotes/csv",
+            "value": 159793305,
+            "range": "± 638278",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "Always quoted/lazy_csv",
+            "value": 657701191,
+            "range": "± 1019128",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "Always quoted/lazy_csv (into_rows)",
+            "value": 648846005,
+            "range": "± 963857",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "Always quoted/lazy_csv (raw)",
+            "value": 178703909,
+            "range": "± 1478177",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "Always quoted/lazy_csv (into_rows, raw)",
+            "value": 177633032,
+            "range": "± 464610",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "Always quoted/csv",
+            "value": 277581594,
+            "range": "± 591108",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "Randomly quoted/lazy_csv",
+            "value": 423210172,
+            "range": "± 2469426",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "Randomly quoted/lazy_csv (into_rows)",
+            "value": 422438659,
+            "range": "± 327741",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "Randomly quoted/lazy_csv (raw)",
+            "value": 134759214,
+            "range": "± 800790",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "Randomly quoted/lazy_csv (into_rows, raw)",
+            "value": 138204561,
+            "range": "± 1109256",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "Randomly quoted/csv",
+            "value": 241881517,
+            "range": "± 1006689",
             "unit": "ns/iter"
           }
         ]
