@@ -1,9 +1,17 @@
-use std::fmt::{self, Display, Formatter};
-use std::num::ParseIntError;
-use std::str::FromStr;
+#![no_std]
 
+use core::fmt::{self, Display, Formatter};
+use core::num::ParseIntError;
+use core::str::FromStr;
+
+#[cfg(feature = "alloc")]
+extern crate alloc;
+
+#[cfg(feature = "bitcode")]
 use bitcode::{Decode, Encode};
+#[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
+
 use thiserror::Error;
 
 /// Universal Product Code version A (UPC-A)
@@ -11,7 +19,8 @@ use thiserror::Error;
 /// ###### References
 /// - https://en.wikipedia.org/wiki/Universal_Product_Code
 /// - https://www.gtin.info/upc/
-#[derive(Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug, Encode, Decode)]
+#[derive(Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug)]
+#[cfg_attr(feature = "bitcode", derive(Encode, Decode))]
 pub struct UpcA(
     /// 12-digit number. The last digit is a error detecting check digit, but interestingly,
     /// whether we include the last digit or not, 5 bytes are still required, so we include the
@@ -110,12 +119,17 @@ impl Display for UpcA {
     reason = "A UPC is a 12-digit decimal number that can start with a zero."
 )]
 fn test_upc_a() -> Result<(), UpcAParseError> {
+    #[cfg(feature = "alloc")]
+    use alloc::string::ToString;
+
     let upc = UpcA::from_code(123456789012)?;
     assert_eq!(upc.0, 123456789012);
+    #[cfg(feature = "alloc")]
     assert_eq!(upc.to_string(), "123456789012");
 
     let upc: UpcA = UpcA::from_code(036000291452)?;
     assert_eq!(upc.0, 036000291452);
+    #[cfg(feature = "alloc")]
     assert_eq!(upc.to_string(), "036000291452");
 
     assert_matches::assert_matches!(
@@ -138,6 +152,7 @@ fn test_upc_a() -> Result<(), UpcAParseError> {
     Ok(())
 }
 
+#[cfg(feature = "serde")]
 impl Serialize for UpcA {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
@@ -152,20 +167,23 @@ impl Serialize for UpcA {
 }
 
 #[test]
-fn test_upc_a_serialize() -> Result<(), Box<dyn std::error::Error>> {
-    use std::collections::HashMap;
-
+#[cfg(feature = "serde")]
+fn test_upc_a_serialize() -> anyhow::Result<()> {
     let upc = UpcA::from_code(123456789012)?;
 
     // JSON (human readable)
     assert_eq!(serde_json::to_string(&upc)?, r#"123456789012"#);
     // TOML (human readable)
-    let table: HashMap<&str, UpcA> = HashMap::from_iter([("upc", upc)]);
-    assert_eq!(
-        toml::to_string(&table)?,
-        r#"upc = 123456789012
+    #[cfg(feature = "alloc")]
+    {
+        use alloc::collections::BTreeMap;
+        let table: BTreeMap<&str, UpcA> = BTreeMap::from_iter([("upc", upc)]);
+        assert_eq!(
+            toml::to_string(&table)?,
+            r#"upc = 123456789012
 "#
-    );
+        );
+    }
     // Bincode (binary)
     assert_eq!(
         bincode::serialize(&upc)?,
@@ -176,6 +194,7 @@ fn test_upc_a_serialize() -> Result<(), Box<dyn std::error::Error>> {
     Ok(())
 }
 
+#[cfg(feature = "serde")]
 impl<'de> Deserialize<'de> for UpcA {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
     where
@@ -191,7 +210,8 @@ impl<'de> Deserialize<'de> for UpcA {
 }
 
 #[test]
-fn test_upc_a_deserialize() -> Result<(), Box<dyn std::error::Error>> {
+#[cfg(feature = "serde")]
+fn test_upc_a_deserialize() -> anyhow::Result<()> {
     #[derive(Deserialize)]
     struct TestInput {
         upc: UpcA,
