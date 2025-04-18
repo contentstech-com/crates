@@ -3,9 +3,18 @@ on:
   push:
     branches:
       - main
+    paths:
+      - 'crates/lazycsv/**'
   pull_request:
     branches:
       - main
+    paths:
+      - 'crates/lazycsv/**'
+
+# Allow only one set of CI to run at a time per PR
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
 
 permissions:
   deployments: write
