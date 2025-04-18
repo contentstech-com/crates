@@ -2,7 +2,7 @@
 
 [![Crates.io](https://img.shields.io/crates/v/isrc.svg)](https://crates.io/crates/isrc)
 [![Documentation](https://docs.rs/isrc/badge.svg)](https://docs.rs/isrc)
-[![License](https://img.shields.io/crates/l/isrc.svg)](https://github.com/contentstech-com/isrc-rs#license)
+[![License](https://img.shields.io/crates/l/isrc.svg)][COPYRIGHT]
 
 A Rust library for parsing, validating, and working with [ISRC (International Standard Recording Code)](http://isrc.ifpi.org/).
 
@@ -93,6 +93,6 @@ assert_eq!(deserialized.isrc, recording.isrc);
 *isrc-rs* is primarily distributed under the terms of both the [Apache License
 (Version 2.0)] and the [MIT license]. See [COPYRIGHT] for details.
 
-[MIT license]: LICENSE-MIT
-[Apache License (Version 2.0)]: LICENSE-APACHE
-[COPYRIGHT]: COPYRIGHT
+[MIT license]: ../../LICENSE-MIT
+[Apache License (Version 2.0)]: ../../LICENSE-APACHE
+[COPYRIGHT]: ../../COPYRIGHT

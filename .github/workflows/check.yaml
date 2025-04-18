@@ -19,3 +19,7 @@ jobs:
         # no_std
       - run: cargo clippy --no-default-features -F alloc --no-deps -- -D warnings
       - run: cargo test --no-default-features -F alloc
+
+        # all features
+      - run: cargo clippy --all-features --no-deps -- -D warnings
+      - run: cargo test --all-features
