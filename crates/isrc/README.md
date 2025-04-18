@@ -20,10 +20,13 @@ When formatted for display, an ISRC typically appears as: `ISRC AA-RRR-YY-DDDDD`
 ## Features
 
 - Memory-efficient representation (8 bytes)
-- Format-aware serialization/deserialization with `serde`
-- Binary serialization support via `bitcode`
+- Format-aware serialization/deserialization with [serde]
+- Binary serialization support via [bitcode]
 - Comprehensive error handling for invalid input
 - No-std compatible, zero heap allocation
+
+[serde]: https://docs.rs/serde
+[bitcode]: https://docs.rs/bitcode
 
 ## Usage
 
@@ -41,14 +44,13 @@ use isrc::Isrc;
 use std::str::FromStr;
 
 // Parse an ISRC from a string
-let isrc = Isrc::from_code("AA6Q72000047").unwrap();
+let isrc = Isrc::from_code("AA6Q72000047")?;
 
-// Parse using FromStr trait (with proper error handling)
-let result = Isrc::from_str("AA6Q72000047");
-match result {
-    Ok(isrc) => println!("Valid ISRC: {}", isrc),
-    Err(e) => println!("Invalid ISRC: {}", e),
-}
+// Parse using FromStr trait
+let isrc = Isrc::from_str("AA6Q72000047")?;
+
+// From a compact binary format
+let isrc = Isrc::from_bytes(b"\xAF\x84\x1E\x00\x41\x41\x0F\x22")?;
 
 // Display a formatted ISRC
 assert_eq!(isrc.to_string(), "ISRC AA-6Q7-20-00047");
@@ -57,9 +59,7 @@ assert_eq!(isrc.to_string(), "ISRC AA-6Q7-20-00047");
 assert_eq!(isrc.to_code(), "AA6Q72000047");
 
 // Binary representation
-let bytes = isrc.to_bytes();
-let isrc_from_bytes = Isrc::from_bytes(&bytes).unwrap();
-assert_eq!(isrc, isrc_from_bytes);
+assert_eq!(isrc.to_bytes(), *b"\xAF\x84\x1E\x00\x41\x41\x0F\x22");
 ```
 
 ### Serde integration
@@ -77,11 +77,11 @@ struct Recording {
 
 // For human-readable formats like JSON and TOML, ISRCs are serialized as strings
 let json = r#"{"title":"Some Song","isrc":"AA6Q72000047"}"#;
-let recording: Recording = serde_json::from_str(json).unwrap();
+let recording: Recording = serde_json::from_str(json)?;
 assert_eq!(recording.isrc.to_code(), "AA6Q72000047");
 
 // For binary formats like bincode, ISRCs are serialized efficiently as 8-byte arrays
-let binary = bincode::serialize(&recording).unwrap();
-let deserialized: Recording = bincode::deserialize(&binary).unwrap();
+let binary = bincode::serialize(&recording)?;
+let deserialized: Recording = bincode::deserialize(&binary)?;
 assert_eq!(deserialized.isrc, recording.isrc);
 ```

@@ -16,10 +16,13 @@
 //! ## Features
 //!
 //! - Memory-efficient representation (8 bytes)
-//! - Format-aware serialization/deserialization with `serde`
-//! - Binary serialization support via `bitcode`
+//! - Format-aware serialization/deserialization with [serde]
+//! - Binary serialization support via [bitcode]
 //! - Comprehensive error handling for invalid input
 //! - No-std compatible, zero heap allocation
+//!
+//! [serde]: https://docs.rs/serde
+//! [bitcode]: https://docs.rs/bitcode
 //!
 //! ## Usage
 //!
@@ -28,14 +31,16 @@
 //! use std::str::FromStr;
 //!
 //! // Parse an ISRC from a string
-//! let isrc = Isrc::from_code("AA6Q72000047").unwrap();
+//! let isrc = Isrc::from_code("AA6Q72000047")?;
+//! # assert_eq!(isrc.to_code_fixed(), *b"AA6Q72000047");
 //!
-//! // Parse using FromStr trait (with proper error handling)
-//! let result = Isrc::from_str("AA6Q72000047");
-//! match result {
-//!     Ok(isrc) => println!("Valid ISRC: {}", isrc),
-//!     Err(e) => println!("Invalid ISRC: {}", e),
-//! }
+//! // Parse using FromStr trait
+//! let isrc = Isrc::from_str("AA6Q72000047")?;
+//! # assert_eq!(isrc.to_code_fixed(), *b"AA6Q72000047");
+//!
+//! // From a compact binary format
+//! let isrc = Isrc::from_bytes(b"\xAF\x84\x1E\x00\x41\x41\x0F\x22")?;
+//! # assert_eq!(isrc.to_code_fixed(), *b"AA6Q72000047");
 //!
 //! // Display a formatted ISRC
 //! assert_eq!(isrc.to_string(), "ISRC AA-6Q7-20-00047");
@@ -45,9 +50,8 @@
 //! assert_eq!(isrc.to_code(), "AA6Q72000047");
 //!
 //! // Binary representation
-//! let bytes = isrc.to_bytes();
-//! let isrc_from_bytes = Isrc::from_bytes(&bytes).unwrap();
-//! assert_eq!(isrc, isrc_from_bytes);
+//! assert_eq!(isrc.to_bytes(), *b"\xAF\x84\x1E\x00\x41\x41\x0F\x22");
+//! # anyhow::Ok::<()>(())
 //! ```
 //!
 //! ### Serde integration
@@ -67,15 +71,15 @@
 //!
 //! // For human-readable formats like JSON and TOML, ISRCs are serialized as strings
 //! let json = r#"{"title":"Some Song","isrc":"AA6Q72000047"}"#;
-//! let recording: Recording = serde_json::from_str(json).unwrap();
-//! # #[cfg(feature = "alloc")]
-//! assert_eq!(recording.isrc.to_code(), "AA6Q72000047");
+//! let recording: Recording = serde_json::from_str(json)?;
+//! # assert_eq!(recording.isrc.to_code_fixed(), *b"AA6Q72000047");
 //!
 //! // For binary formats like bincode, ISRCs are serialized efficiently as 8-byte arrays
-//! let binary = bincode::serialize(&recording).unwrap();
-//! let deserialized: Recording = bincode::deserialize(&binary).unwrap();
+//! let binary = bincode::serialize(&recording)?;
+//! let deserialized: Recording = bincode::deserialize(&binary)?;
 //! assert_eq!(deserialized.isrc, recording.isrc);
 //! # }
+//! # anyhow::Ok::<()>(())
 //! ```
 
 #![no_std]
@@ -114,7 +118,7 @@ use thiserror::Error;
 /// use isrc::Isrc;
 ///
 /// // Parse an ISRC from a string
-/// let isrc = Isrc::from_code("AA6Q72000047").unwrap();
+/// let isrc = Isrc::from_code("AA6Q72000047")?;
 ///
 /// // Display a formatted ISRC
 /// assert_eq!(isrc.to_string(), "ISRC AA-6Q7-20-00047");
@@ -122,6 +126,7 @@ use thiserror::Error;
 /// // Convert to compact code format
 /// # #[cfg(feature = "alloc")]
 /// assert_eq!(isrc.to_code(), "AA6Q72000047");
+/// # anyhow::Ok::<()>(())
 /// ```
 ///
 /// ###### References
@@ -199,7 +204,7 @@ pub enum IsrcParseError {
 }
 
 impl Isrc {
-    /// Creates an `Isrc` from a string code.
+    /// Creates an [`Isrc`] from a string code.
     ///
     /// The input string must be exactly 12 characters long and follow the ISRC format:
     /// - First 2 characters: Agency code (letters only)
@@ -214,20 +219,21 @@ impl Isrc {
     /// use isrc::Isrc;
     ///
     /// // Valid ISRC
-    /// let isrc = Isrc::from_code("AA6Q72000047").unwrap();
+    /// let isrc = Isrc::from_code("AA6Q72000047")?;
     /// assert_eq!(isrc.to_string(), "ISRC AA-6Q7-20-00047");
     ///
     /// // Valid ISRC with lowercase letters
-    /// let isrc = Isrc::from_code("aa6q72000047").unwrap();
+    /// let isrc = Isrc::from_code("aa6q72000047")?;
     /// assert_eq!(isrc.to_string(), "ISRC AA-6Q7-20-00047");
     ///
     /// // Invalid ISRC (incorrect length)
     /// assert!(Isrc::from_code("AA6Q7200047").is_err());
+    /// # anyhow::Ok::<()>(())
     /// ```
     ///
     /// # Errors
     ///
-    /// Returns an `IsrcParseError` if:
+    /// Returns an [`IsrcParseError`] if:
     /// - The input is not exactly 12 characters long
     /// - The agency code contains non-letter characters
     /// - The registrant code contains characters that are not alphanumeric
@@ -286,7 +292,7 @@ impl Isrc {
         })
     }
 
-    /// Converts the `Isrc` to its compact 12-character string representation.
+    /// Converts the [`Isrc`] to its compact 12-character string representation.
     ///
     /// This method returns the ISRC in its compact format without hyphens or the "ISRC" prefix,
     /// which is suitable for storage or transmission.
@@ -297,8 +303,9 @@ impl Isrc {
     /// use isrc::Isrc;
     /// use std::str::FromStr;
     ///
-    /// let isrc = Isrc::from_str("AA6Q72000047").unwrap();
+    /// let isrc = Isrc::from_str("AA6Q72000047")?;
     /// assert_eq!(isrc.to_code(), "AA6Q72000047");
+    /// # anyhow::Ok::<()>(())
     /// ```
     #[cfg(feature = "alloc")]
     pub fn to_code(self) -> String {
@@ -323,8 +330,8 @@ impl Isrc {
         )
     }
 
-    /// Converts the `Isrc` to its compact 12-character string representation. It's zero heap
-    /// allocation version of [`to_code`](#method.to_code).
+    /// Converts the [`Isrc`] to its compact 12-character string representation. It's zero heap
+    /// allocation version of [`Isrc::to_code`].
     ///
     /// This method returns the ISRC in its compact format without hyphens or the "ISRC" prefix,
     /// which is suitable for storage or transmission.
@@ -335,8 +342,9 @@ impl Isrc {
     /// use isrc::Isrc;
     /// use std::str::FromStr;
     ///
-    /// let isrc = Isrc::from_str("AA6Q72000047").unwrap();
+    /// let isrc = Isrc::from_str("AA6Q72000047")?;
     /// assert_eq!(isrc.to_code_fixed(), *b"AA6Q72000047");
+    /// # anyhow::Ok::<()>(())
     /// ```
     pub const fn to_code_fixed(self) -> [u8; 12] {
         use core::mem::MaybeUninit;
@@ -373,7 +381,7 @@ impl Isrc {
         unsafe { core::mem::transmute::<_, [u8; 12]>(ret) }
     }
 
-    /// Creates an `Isrc` from an 8-byte array.
+    /// Creates an [`Isrc`] from an 8-byte array.
     ///
     /// This method deserializes an ISRC from its compact binary representation, which is
     /// primarily useful for binary serialization formats.
@@ -389,14 +397,15 @@ impl Isrc {
     /// use isrc::Isrc;
     ///
     /// let bytes = [0xB1, 0xCB, 0x74, 0x00, b'Z', b'Z', 0x0F, 0x22];
-    /// let isrc = Isrc::from_bytes(&bytes).unwrap();
+    /// let isrc = Isrc::from_bytes(&bytes)?;
     /// # #[cfg(feature = "alloc")]
     /// assert_eq!(isrc.to_code(), "ZZ6Q77654321");
+    /// # anyhow::Ok::<()>(())
     /// ```
     ///
     /// # Errors
     ///
-    /// Returns an `IsrcParseError` if:
+    /// Returns an [`IsrcParseError`] if:
     /// - The agency prefix contains non-uppercase letter characters
     /// - The registrant prefix exceeds the maximum allowed value (36³-1)
     /// - The rest field exceeds the maximum allowed value (9,999,999)
@@ -434,10 +443,10 @@ impl Isrc {
         })
     }
 
-    /// Converts the `Isrc` to its compact 8-byte binary representation.
+    /// Converts the [`Isrc`] to its compact 8-byte binary representation.
     ///
     /// This method serializes the ISRC into a fixed-size array suitable for binary storage
-    /// or transmission. It is the inverse of `from_bytes`.
+    /// or transmission. It is the inverse of [`Isrc::from_bytes`].
     ///
     /// # Examples
     ///
@@ -445,13 +454,14 @@ impl Isrc {
     /// use isrc::Isrc;
     /// use std::str::FromStr;
     ///
-    /// let isrc = Isrc::from_str("AZ6Q77654321").unwrap();
+    /// let isrc = Isrc::from_str("AZ6Q77654321")?;
     /// let bytes = isrc.to_bytes();
     /// assert_eq!(bytes, [0xB1, 0xCB, 0x74, 0x00, b'A', b'Z', 0x0F, 0x22]);
     ///
     /// // Round-trip conversion
-    /// let round_trip = Isrc::from_bytes(&bytes).unwrap();
+    /// let round_trip = Isrc::from_bytes(&bytes)?;
     /// assert_eq!(round_trip, isrc);
+    /// # anyhow::Ok::<()>(())
     /// ```
     pub const fn to_bytes(self) -> [u8; 8] {
         [
@@ -577,9 +587,10 @@ fn test_isrc_to_bytes() {
     );
 }
 
-/// Implements the `FromStr` trait for `Isrc` to allow parsing from strings using the `parse` method.
+/// Implements the [`FromStr`] trait for [`Isrc`] to allow parsing from strings using the `parse`
+/// method.
 ///
-/// This implementation delegates to `Isrc::from_code`.
+/// This implementation delegates to [`Isrc::from_code`].
 ///
 /// # Examples
 ///
@@ -588,10 +599,13 @@ fn test_isrc_to_bytes() {
 /// use std::str::FromStr;
 ///
 /// // Parse using FromStr
-/// let isrc = Isrc::from_str("AA6Q72000047").unwrap();
+/// let isrc = Isrc::from_str("AA6Q72000047")?;
+/// # assert_eq!(isrc.to_code_fixed(), *b"AA6Q72000047");
 ///
 /// // Or using the more idiomatic parse method
-/// let isrc: Isrc = "AA6Q72000047".parse().unwrap();
+/// let isrc: Isrc = "AA6Q72000047".parse()?;
+/// # assert_eq!(isrc.to_code_fixed(), *b"AA6Q72000047");
+/// # anyhow::Ok::<()>(())
 /// ```
 impl FromStr for Isrc {
     type Err = IsrcParseError;
@@ -652,7 +666,7 @@ fn test_isrc_from_str() -> Result<(), IsrcParseError> {
     Ok(())
 }
 
-/// Implements the `Display` trait for `Isrc` to provide a formatted string representation.
+/// Implements the [`Display`] trait for [`Isrc`] to provide a formatted string representation.
 ///
 /// This formats the ISRC with the standard hyphenated format and "ISRC" prefix:
 /// `ISRC AA-RRR-YY-NNNNN` where:
@@ -667,8 +681,9 @@ fn test_isrc_from_str() -> Result<(), IsrcParseError> {
 /// use isrc::Isrc;
 /// use std::str::FromStr;
 ///
-/// let isrc = Isrc::from_str("AA6Q72000047").unwrap();
+/// let isrc = Isrc::from_str("AA6Q72000047")?;
 /// assert_eq!(isrc.to_string(), "ISRC AA-6Q7-20-00047");
+/// # anyhow::Ok::<()>(())
 /// ```
 impl Display for Isrc {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
@@ -713,11 +728,11 @@ fn test_isrc_display() -> anyhow::Result<()> {
     Ok(())
 }
 
-/// Implements the `Serialize` trait for `Isrc` to support serialization with serde.
+/// Implements the [`Serialize`] trait for [`Isrc`] to support serialization with serde.
 ///
 /// This implementation provides format-aware serialization:
-/// - For human-readable formats (like JSON, TOML): Uses the compact string representation (`to_code()`)
-/// - For binary formats (like bincode): Uses the binary representation (`to_bytes()`)
+/// - For human-readable formats (like JSON, TOML): Uses the compact string representation ([`Isrc::to_code`])
+/// - For binary formats (like bincode): Uses the binary representation ([`Isrc::to_bytes`])
 ///
 /// # Examples
 ///
@@ -725,14 +740,15 @@ fn test_isrc_display() -> anyhow::Result<()> {
 /// use isrc::Isrc;
 /// use std::str::FromStr;
 ///
-/// let isrc = Isrc::from_str("AA6Q72000047").unwrap();
+/// let isrc = Isrc::from_str("AA6Q72000047")?;
 ///
 /// // JSON serialization (human-readable)
-/// let json = serde_json::to_string(&isrc).unwrap();
+/// let json = serde_json::to_string(&isrc)?;
 /// assert_eq!(json, r#""AA6Q72000047""#);
 ///
 /// // Bincode serialization (binary)
-/// let binary = bincode::serialize(&isrc).unwrap();
+/// let binary = bincode::serialize(&isrc)?;
+/// # anyhow::Ok::<()>(())
 /// ```
 #[cfg(feature = "serde")]
 impl Serialize for Isrc {
@@ -780,11 +796,11 @@ fn test_isrc_serialize() -> anyhow::Result<()> {
     Ok(())
 }
 
-/// Implements the `Deserialize` trait for `Isrc` to support deserialization with serde.
+/// Implements the [`Deserialize`] trait for [`Isrc`] to support deserialization with serde.
 ///
 /// This implementation provides format-aware deserialization:
-/// - For human-readable formats (like JSON, TOML): Expects a string and uses `from_code()`
-/// - For binary formats (like bincode): Expects an 8-byte array and uses `from_bytes()`
+/// - For human-readable formats (like JSON, TOML): Expects a string and uses [`Isrc::from_code`]
+/// - For binary formats (like bincode): Expects an 8-byte array and uses [`Isrc::from_bytes`]
 ///
 /// # Examples
 ///
@@ -793,7 +809,7 @@ fn test_isrc_serialize() -> anyhow::Result<()> {
 /// use serde::Deserialize;
 ///
 /// // JSON deserialization (human-readable)
-/// let isrc: Isrc = serde_json::from_str(r#""AA6Q72000047""#).unwrap();
+/// let isrc: Isrc = serde_json::from_str(r#""AA6Q72000047""#)?;
 /// # #[cfg(feature = "alloc")]
 /// assert_eq!(isrc.to_code(), "AA6Q72000047");
 ///
@@ -803,9 +819,10 @@ fn test_isrc_serialize() -> anyhow::Result<()> {
 ///     isrc: Isrc,
 /// }
 ///
-/// let record: Record = serde_json::from_str(r#"{"isrc":"AA6Q72000047"}"#).unwrap();
+/// let record: Record = serde_json::from_str(r#"{"isrc":"AA6Q72000047"}"#)?;
 /// # #[cfg(feature = "alloc")]
 /// assert_eq!(record.isrc.to_code(), "AA6Q72000047");
+/// # anyhow::Ok::<()>(())
 /// ```
 #[cfg(feature = "serde")]
 impl<'de> Deserialize<'de> for Isrc {
