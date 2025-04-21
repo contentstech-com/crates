@@ -27,9 +27,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - uses: Homebrew/actions/setup-homebrew@1bad5a8c1bb08ac392c63b4587f3231cf80bb1a4 # 2025-04-02
       - uses: dtolnay/rust-toolchain@1ff72ee08e3cb84d84adba594e0a297990fc1ed3 # stable
       - uses: Swatinem/rust-cache@f0deed1e0edfc6a9be95417288c0e1099b1eeec3 # v2.7.7
-      - run: cargo install cargo-criterion@1.1.0
+      - run: brew install simnalamburt/x/cargo-criterion
       - run: cargo criterion --output-format bencher 2>&1 | tee output.txt
       - uses: benchmark-action/github-action-benchmark@d48d326b4ca9ba73ca0cd0d59f108f9e02a381c7 # v1.20.4
         with:
