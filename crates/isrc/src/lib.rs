@@ -507,7 +507,7 @@ fn test_isrc() -> Result<(), IsrcParseError> {
     assert_eq!(isrc.to_code_fixed(), *b"AA6Q72000047");
 
     // Invalid inputs
-    assert_matches::assert_matches!(
+    assert_eq!(
         Isrc::from_code("00A6Q7200047"),
         Err(IsrcParseError::InvalidAgencyPrefix {
             found: b'0',
@@ -515,7 +515,7 @@ fn test_isrc() -> Result<(), IsrcParseError> {
         })
     );
 
-    assert_matches::assert_matches!(
+    assert_eq!(
         Isrc::from_code("AA-6Q7200047"),
         Err(IsrcParseError::InvalidRegistrantPrefix {
             found: b'-',
@@ -523,7 +523,7 @@ fn test_isrc() -> Result<(), IsrcParseError> {
         })
     );
 
-    assert_matches::assert_matches!(
+    assert_eq!(
         Isrc::from_code("aa6q7200047\n"),
         Err(IsrcParseError::InvalidDigit {
             found: b'\n',
@@ -551,7 +551,7 @@ fn test_isrc_from_bytes() -> Result<(), IsrcParseError> {
 
     // Invalid inputs
     let fail = Isrc::from_bytes(&[0xB1, 0xCB, 0x74, 0x00, 0x5A, 0x00, 0x0F, 0x22]);
-    assert_matches::assert_matches!(
+    assert_eq!(
         fail,
         Err(IsrcParseError::InvalidAgencyPrefix {
             found: 0x00,
@@ -560,13 +560,13 @@ fn test_isrc_from_bytes() -> Result<(), IsrcParseError> {
     );
 
     let fail = Isrc::from_bytes(&[0xB1, 0xCB, 0x74, 0x00, 0x5A, 0x5A, 0xFF, 0xFF]);
-    assert_matches::assert_matches!(
+    assert_eq!(
         fail,
         Err(IsrcParseError::RegistrantPrefixOutOfRange { value: 0xFFFF })
     );
 
     let fail = Isrc::from_bytes(&[0xFF, 0xFF, 0xFF, 0xFF, 0x5A, 0x5A, 0x0F, 0x22]);
-    assert_matches::assert_matches!(
+    assert_eq!(
         fail,
         Err(IsrcParseError::ValueOutOfRange { value: 0xFFFFFFFF })
     );
@@ -645,7 +645,7 @@ fn test_isrc_from_str() -> Result<(), IsrcParseError> {
     assert_eq!(isrc.to_code_fixed(), *b"AA6Q72000047");
 
     // Invalid inputs
-    assert_matches::assert_matches!(
+    assert_eq!(
         "00A6Q7200047".parse::<Isrc>(),
         Err(IsrcParseError::InvalidAgencyPrefix {
             found: b'0',
@@ -653,12 +653,12 @@ fn test_isrc_from_str() -> Result<(), IsrcParseError> {
         })
     );
 
-    assert_matches::assert_matches!(
+    assert_eq!(
         "AA6Q7200047".parse::<Isrc>(),
         Err(IsrcParseError::InvalidLength { found: 11 })
     );
 
-    assert_matches::assert_matches!(
+    assert_eq!(
         "AA6Q7200047910".parse::<Isrc>(),
         Err(IsrcParseError::InvalidLength { found: 14 })
     );
@@ -883,13 +883,19 @@ fn test_isrc_deserialize() -> anyhow::Result<()> {
     //
     // JSON (human readable)
     let r: Result<TestInput, _> = serde_json::from_str(r#"{"isrc":"AA6Q72000047777777"}"#);
-    assert_matches::assert_matches!(r, Err(serde_json::Error { .. }));
+    let Err(serde_json::Error { .. }) = r else {
+        panic!("Expected error, but got: {r:?}");
+    };
     // TOML (human readable)
     let r: Result<TestInput, _> = toml::from_str(r#"isrc = "AA6Q72000""#);
-    assert_matches::assert_matches!(r, Err(toml::de::Error { .. }));
+    let Err(toml::de::Error { .. }) = r else {
+        panic!("Expected error, but got: {r:?}");
+    };
     // Bincode (binary)
     let r: Result<TestInput, _> = bincode::deserialize(b"\xAF\x84\x00\x41\x41\x0f\x22");
-    assert_matches::assert_matches!(r, Err(bincode::Error { .. }));
+    let Err(bincode::Error { .. }) = r else {
+        panic!("Expected error, but got: {r:?}");
+    };
 
     Ok(())
 }

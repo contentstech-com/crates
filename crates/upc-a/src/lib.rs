@@ -355,19 +355,19 @@ fn test_upc_a() -> Result<(), UpcAParseError> {
     #[cfg(feature = "alloc")]
     assert_eq!(upc.to_string(), "036000291452");
 
-    assert_matches::assert_matches!(
+    assert_eq!(
         UpcA::from_code(1_000_000_000_000),
         Err(UpcAParseError::InputTooLarge {
             found: 1_000_000_000_000
         })
     );
 
-    assert_matches::assert_matches!(
+    assert_eq!(
         UpcA::from_code(999_999_999_999),
         Err(UpcAParseError::ChecksumFailed { found: 6 })
     );
 
-    assert_matches::assert_matches!(
+    assert_eq!(
         "036000291453".parse::<UpcA>(),
         Err(UpcAParseError::ChecksumFailed { found: 1 })
     );
