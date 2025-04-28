@@ -1,5 +1,6 @@
+use lazycsv::Csv;
 #[cfg(feature = "alloc")]
-use lazycsv::{Cell, Csv, CsvIterItem};
+use lazycsv::{Cell, CsvIterItem};
 
 #[cfg(feature = "alloc")]
 #[test]
