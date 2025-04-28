@@ -193,7 +193,7 @@ impl<'a> Csv<'a> {
     pub fn skip_rows(mut self, n: usize) -> Self {
         let mut start = match self.state {
             IterState::Cell(start) => start,
-            IterState::LineEnd(lf) => lf + 1,
+            IterState::LineEnd(lf, is_crlf) => lf + 1 + (is_crlf as usize),
             IterState::Done => return self,
         };
 
@@ -219,7 +219,7 @@ impl<'a> Csv<'a> {
     /// ```
     /// use lazycsv::{Csv, CsvIterItem};
     ///
-    /// let data = b"aaa,bbb\n100,200";
+    /// let data = b"aaa,bbb\r\n100,200";
     /// let mut csv = Csv::new(data);
     ///
     /// assert_eq!(csv.position(), 0); // Start position
@@ -228,16 +228,16 @@ impl<'a> Csv<'a> {
     /// assert_eq!(csv.position(), 4); // Position after 'aaa,' (start of 'b')
     ///
     /// let _ = csv.next(); // Yields Cell('bbb')
-    /// assert_eq!(csv.position(), 8); // Position after 'bbb\n' (start of '1')
+    /// assert_eq!(csv.position(), 7); // Position after 'bbb' (start of '\r')
     ///
     /// let _ = csv.next(); // Yields LineEnd
-    /// assert_eq!(csv.position(), 8); // Position after 'bbb\n' (start of '1')
+    /// assert_eq!(csv.position(), 9); // Position after '\r\n' (start of '1')
     ///
     /// let _ = csv.next(); // Yields Cell('100')
-    /// assert_eq!(csv.position(), 12); // Position after '100,' (start of '2')
+    /// assert_eq!(csv.position(), 13); // Position after '100,' (start of '2')
     ///
     /// let _ = csv.next(); // Yields Cell('200')
-    /// assert_eq!(csv.position(), 15); // Position after '200' (end of buffer)
+    /// assert_eq!(csv.position(), 16); // Position after '200' (end of buffer)
     ///
     /// assert!(csv.next().is_none()); // End of iteration
     /// assert_eq!(csv.position(), data.len()); // Position at the end
@@ -245,7 +245,7 @@ impl<'a> Csv<'a> {
     pub fn position(&self) -> usize {
         match self.state {
             IterState::Cell(pos) => pos,
-            IterState::LineEnd(pos) => pos + 1, // The next item starts after the newline character
+            IterState::LineEnd(pos, _) => pos, // The next item starts after the newline character
             IterState::Done => self.buf.len(),
         }
     }
@@ -255,7 +255,7 @@ impl<'a> Csv<'a> {
 #[derive(Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug)]
 enum IterState {
     Cell(usize),
-    LineEnd(usize),
+    LineEnd(usize, bool),
     Done,
 }
 
@@ -273,8 +273,8 @@ impl<'a> Iterator for Csv<'a> {
 
     fn next(&mut self) -> Option<Self::Item> {
         let start = match self.state {
-            IterState::LineEnd(pos) => {
-                self.state = IterState::Cell(pos + 1);
+            IterState::LineEnd(pos, is_crlf) => {
+                self.state = IterState::Cell(pos + 1 + (is_crlf as usize));
                 return Some(CsvIterItem::LineEnd);
             }
             IterState::Done => return None,
@@ -316,11 +316,12 @@ impl<'a> Iterator for Csv<'a> {
             // SAFETY: `index - 1` is checked to be within the bounds of `self.buf`.
             let is_crlf =
                 c == b'\n' && index != 0 && unsafe { *self.buf.get_unchecked(index - 1) } == b'\r';
+            let end = index - (is_crlf as usize);
             let cell = Cell {
-                buf: &self.buf[start..(index - (is_crlf as usize))],
+                buf: &self.buf[start..end],
             };
             self.state = if c == b'\n' {
-                IterState::LineEnd(index)
+                IterState::LineEnd(end, is_crlf)
             } else {
                 IterState::Cell(index + 1)
             };
