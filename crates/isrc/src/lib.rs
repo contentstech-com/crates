@@ -308,7 +308,7 @@ impl Isrc {
     /// # anyhow::Ok::<()>(())
     /// ```
     #[cfg(feature = "alloc")]
-    pub fn to_code(self) -> String {
+    pub fn to_code(&self) -> String {
         let mut n = self.registrant_prefix;
 
         let d2 = ascii_uppercase_from_digit_base36(n) as char;
@@ -346,7 +346,7 @@ impl Isrc {
     /// assert_eq!(isrc.to_code_fixed(), *b"AA6Q72000047");
     /// # anyhow::Ok::<()>(())
     /// ```
-    pub const fn to_code_fixed(self) -> [u8; 12] {
+    pub const fn to_code_fixed(&self) -> [u8; 12] {
         use core::mem::MaybeUninit;
 
         let mut ret = [const { MaybeUninit::<u8>::uninit() }; 12];
@@ -463,7 +463,7 @@ impl Isrc {
     /// assert_eq!(round_trip, isrc);
     /// # anyhow::Ok::<()>(())
     /// ```
-    pub const fn to_bytes(self) -> [u8; 8] {
+    pub const fn to_bytes(&self) -> [u8; 8] {
         [
             self.rest as u8,
             (self.rest >> 8) as u8,
