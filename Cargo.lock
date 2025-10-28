@@ -245,6 +245,19 @@ dependencies = [
 ]
 
 [[package]]
+name = "ean13"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "bincode",
+ "bitcode",
+ "serde",
+ "serde_json",
+ "thiserror",
+ "toml",
+]
+
+[[package]]
 name = "either"
 version = "1.13.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
