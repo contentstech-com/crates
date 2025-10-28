@@ -2,6 +2,43 @@ use lazycsv::Csv;
 #[cfg(feature = "alloc")]
 use lazycsv::{Cell, CsvIterItem};
 
+macro_rules! assert_csv {
+    ($csv:expr, Cell($buf:expr)) => {
+        match $csv.next() {
+            Some(CsvIterItem::Cell(Cell { buf: $buf })) => (),
+            other => panic!("Expected Cell, got {other:?}"),
+        }
+    };
+    ($csv:expr, Cell($buf:expr, $str:expr)) => {
+        let cell = match $csv.next() {
+            Some(CsvIterItem::Cell(cell @ Cell { buf: $buf })) => cell,
+            other => panic!("Expected {:?}, got {other:?}", $buf),
+        };
+        assert_eq!($str, cell.try_as_str().unwrap());
+    };
+    ($csv:expr, LineEnd) => {
+        match $csv.next() {
+            Some(CsvIterItem::LineEnd) => (),
+            other => panic!("Expected LineEnd, got {other:?}"),
+        }
+    };
+    ($csv:expr, EOF) => {
+        match $csv.next() {
+            None => (),
+            other => panic!("Expected EOF, got {other:?}"),
+        }
+    };
+    ($csv:expr, position == $expected:expr) => {
+        assert_eq!($csv.position(), $expected);
+    };
+}
+
+macro_rules! assert_eq_cell {
+    ($cell:expr, $buf:expr) => {
+        assert_eq!($cell, Cell { buf: $buf });
+    };
+}
+
 #[cfg(feature = "alloc")]
 #[test]
 fn basic() {
@@ -11,37 +48,17 @@ fn basic() {
 "#,
     );
 
-    macro_rules! t {
-        ($buf:expr, $str:expr) => {
-            match csv.next() {
-                Some(CsvIterItem::Cell(cell @ Cell { buf: $buf })) => {
-                    assert_eq!($str, cell.try_as_str().unwrap());
-                }
-                other => {
-                    panic!("Expected {:?}, got {:?}", $buf, other)
-                }
-            }
-        };
-        () => {
-            match csv.next() {
-                Some(CsvIterItem::LineEnd) => {}
-                other => {
-                    panic!("Expected LineEnd, got {:?}", other)
-                }
-            }
-        };
-    }
-
-    t!(br#"cell 1"#, r#"cell 1"#);
-    t!(br#"cell 2"#, r#"cell 2"#);
-    t!(br#"cell 3"#, r#"cell 3"#);
-    t!(br#"cell 4"#, r#"cell 4"#);
-    t!();
-    t!(br#""Hello, world!""#, r#"Hello, world!"#);
-    t!(br#""Hi ""Quote""""#, r#"Hi "Quote""#);
-    t!(br#""""HELLO""""#, r#""HELLO""#);
-    t!(br#""""name""""#, r#""name""#);
-    t!();
+    assert_csv!(csv, Cell(br#"cell 1"#, r#"cell 1"#));
+    assert_csv!(csv, Cell(br#"cell 2"#, r#"cell 2"#));
+    assert_csv!(csv, Cell(br#"cell 3"#, r#"cell 3"#));
+    assert_csv!(csv, Cell(br#"cell 4"#, r#"cell 4"#));
+    assert_csv!(csv, LineEnd);
+    assert_csv!(csv, Cell(br#""Hello, world!""#, r#"Hello, world!"#));
+    assert_csv!(csv, Cell(br#""Hi ""Quote""""#, r#"Hi "Quote""#));
+    assert_csv!(csv, Cell(br#""""HELLO""""#, r#""HELLO""#));
+    assert_csv!(csv, Cell(br#""""name""""#, r#""name""#));
+    assert_csv!(csv, LineEnd);
+    assert_csv!(csv, EOF);
 }
 
 #[cfg(feature = "alloc")]
@@ -58,48 +75,40 @@ fn position() {
     let data = b"aaa,bbb\n100,200";
     let mut csv = Csv::new(data);
 
-    assert_eq!(csv.position(), 0); // Start position
-
-    let _ = csv.next(); // Yields Cell('aaa')
-    assert_eq!(csv.position(), 4); // Position after 'aaa,' (start of 'b')
-
-    let _ = csv.next(); // Yields Cell('bbb')
-    assert_eq!(csv.position(), 7); // Position after 'bbb' (start of '\r')
-
-    let _ = csv.next(); // Yields LineEnd
-    assert_eq!(csv.position(), 8); // Position after '\n' (start of '1')
-
-    let _ = csv.next(); // Yields Cell('100')
-    assert_eq!(csv.position(), 12); // Position after '100,' (start of '2')
-
-    let _ = csv.next(); // Yields Cell('200')
-    assert_eq!(csv.position(), 15); // Position after '200' (end of buffer)
-
-    assert!(csv.next().is_none()); // End of iteration
-    assert_eq!(csv.position(), data.len()); // Position at the end
+    assert_csv!(csv, position == 0); // Start position
+    assert_csv!(csv, Cell(b"aaa")); // Yields Cell('aaa')
+    assert_csv!(csv, position == 4); // Position after 'aaa,' (start of 'b')
+    assert_csv!(csv, Cell(b"bbb")); // Yields Cell('bbb')
+    assert_csv!(csv, position == 7); // Position after 'bbb' (start of '\r')
+    assert_csv!(csv, LineEnd); // Yields LineEnd
+    assert_csv!(csv, position == 8); // Position after '\n' (start of '1')
+    assert_csv!(csv, Cell(b"100")); // Yields Cell('100')
+    assert_csv!(csv, position == 12); // Position after '100,' (start of '2')
+    assert_csv!(csv, Cell(b"200")); // Yields Cell('200')
+    assert_csv!(csv, position == 15); // Position after '200' (end of buffer)
+    assert_csv!(csv, EOF); // End of iteration
+    assert_csv!(csv, position == data.len()); // Position at the end
 }
 
 #[cfg(feature = "alloc")]
 #[test]
 fn into_rows() {
-    let data = b"a,b,c\n1,2,3\n4,5,6\n";
-    let csv = Csv::new(data);
-    let mut iter = csv.into_rows();
+    let mut iter = Csv::new(b"a,b,c\n1,2,3\n4,5,6\n").into_rows();
 
     let [a, b, c] = iter.next().unwrap().unwrap();
-    assert_eq!(a.try_as_str().unwrap(), "a");
-    assert_eq!(b.try_as_str().unwrap(), "b");
-    assert_eq!(c.try_as_str().unwrap(), "c");
+    assert_eq_cell!(a, b"a");
+    assert_eq_cell!(b, b"b");
+    assert_eq_cell!(c, b"c");
 
     let [a, b, c] = iter.next().unwrap().unwrap();
-    assert_eq!(a.try_as_str().unwrap(), "1");
-    assert_eq!(b.try_as_str().unwrap(), "2");
-    assert_eq!(c.try_as_str().unwrap(), "3");
+    assert_eq_cell!(a, b"1");
+    assert_eq_cell!(b, b"2");
+    assert_eq_cell!(c, b"3");
 
     let [a, b, c] = iter.next().unwrap().unwrap();
-    assert_eq!(a.try_as_str().unwrap(), "4");
-    assert_eq!(b.try_as_str().unwrap(), "5");
-    assert_eq!(c.try_as_str().unwrap(), "6");
+    assert_eq_cell!(a, b"4");
+    assert_eq_cell!(b, b"5");
+    assert_eq_cell!(c, b"6");
 
     assert!(iter.next().is_none());
 }
@@ -107,26 +116,24 @@ fn into_rows() {
 #[cfg(feature = "alloc")]
 #[test]
 fn into_rows_with_range() {
-    let data = b"a,b,c\n1,2,3\n4,5,6\n";
-    let csv = Csv::new(data);
-    let mut iter = csv.into_rows_with_range();
+    let mut iter = Csv::new(b"a,b,c\n1,2,3\n4,5,6\n").into_rows_with_range();
 
     let ([a, b, c], range) = iter.next().unwrap().unwrap();
-    assert_eq!(a.try_as_str().unwrap(), "a");
-    assert_eq!(b.try_as_str().unwrap(), "b");
-    assert_eq!(c.try_as_str().unwrap(), "c");
+    assert_eq_cell!(a, b"a");
+    assert_eq_cell!(b, b"b");
+    assert_eq_cell!(c, b"c");
     assert_eq!(range, 0..6); // "a,b,c\n"
 
     let ([a, b, c], range) = iter.next().unwrap().unwrap();
-    assert_eq!(a.try_as_str().unwrap(), "1");
-    assert_eq!(b.try_as_str().unwrap(), "2");
-    assert_eq!(c.try_as_str().unwrap(), "3");
+    assert_eq_cell!(a, b"1");
+    assert_eq_cell!(b, b"2");
+    assert_eq_cell!(c, b"3");
     assert_eq!(range, 6..12); // "1,2,3\n"
 
     let ([a, b, c], range) = iter.next().unwrap().unwrap();
-    assert_eq!(a.try_as_str().unwrap(), "4");
-    assert_eq!(b.try_as_str().unwrap(), "5");
-    assert_eq!(c.try_as_str().unwrap(), "6");
+    assert_eq_cell!(a, b"4");
+    assert_eq_cell!(b, b"5");
+    assert_eq_cell!(c, b"6");
     assert_eq!(range, 12..18); // "4,5,6\n"
 
     assert!(iter.next().is_none());
