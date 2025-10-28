@@ -328,10 +328,15 @@ impl<'a> Iterator for Csv<'a> {
             else {
                 self.state = IterState::Done;
                 return if start < self.buf.len() {
+                    // Return the last cell if there's remaining data.
                     Some(CsvIterItem::Cell(Cell {
                         buf: &self.buf[start..],
                     }))
+                } else if self.buf.ends_with(&[self.separator]) {
+                    // Handle trailing empty cell when no trailing newline is present.
+                    Some(CsvIterItem::Cell(Cell { buf: &[] }))
                 } else {
+                    // Gracefully reached EOF with no more data
                     None
                 };
             };

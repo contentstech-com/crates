@@ -59,24 +59,6 @@ fn basic() {
     assert_csv!(csv, EOF);
 }
 
-#[test]
-fn no_trailing_newline() {
-    let mut csv = Csv::new(b"a,b,c\n1,2,3\n4,5,6");
-
-    assert_csv!(csv, Cell(b"a"));
-    assert_csv!(csv, Cell(b"b"));
-    assert_csv!(csv, Cell(b"c"));
-    assert_csv!(csv, LineEnd);
-    assert_csv!(csv, Cell(b"1"));
-    assert_csv!(csv, Cell(b"2"));
-    assert_csv!(csv, Cell(b"3"));
-    assert_csv!(csv, LineEnd);
-    assert_csv!(csv, Cell(b"4"));
-    assert_csv!(csv, Cell(b"5"));
-    assert_csv!(csv, Cell(b"6"));
-    assert_csv!(csv, EOF);
-}
-
 #[cfg(feature = "alloc")]
 #[test]
 fn dequote() {
@@ -87,23 +69,68 @@ fn dequote() {
 }
 
 #[test]
-fn position() {
-    let data = b"aaa,bbb\n100,200";
-    let mut csv = Csv::new(data);
+fn check_corner_cases() {
+    // No trailing newline
+    let mut csv = Csv::new(b"a,b,c\n1,2,3\n4,5,6");
+    assert_csv!(csv, position == 0);
+    assert_csv!(csv, Cell(b"a"));
+    assert_csv!(csv, position == 2);
+    assert_csv!(csv, Cell(b"b"));
+    assert_csv!(csv, position == 4);
+    assert_csv!(csv, Cell(b"c"));
+    assert_csv!(csv, position == 5);
+    assert_csv!(csv, LineEnd);
+    assert_csv!(csv, position == 6);
+    assert_csv!(csv, Cell(b"1"));
+    assert_csv!(csv, position == 8);
+    assert_csv!(csv, Cell(b"2"));
+    assert_csv!(csv, position == 10);
+    assert_csv!(csv, Cell(b"3"));
+    assert_csv!(csv, position == 11);
+    assert_csv!(csv, LineEnd);
+    assert_csv!(csv, position == 12);
+    assert_csv!(csv, Cell(b"4"));
+    assert_csv!(csv, position == 14);
+    assert_csv!(csv, Cell(b"5"));
+    assert_csv!(csv, position == 16);
+    assert_csv!(csv, Cell(b"6"));
+    assert_csv!(csv, position == 17);
+    assert_csv!(csv, EOF);
+    assert_csv!(csv, position == 17);
 
+    // CRLF line endings
+    let mut csv = Csv::new(b"aaa,bbb\r\n100,200\r\n");
     assert_csv!(csv, position == 0); // Start position
     assert_csv!(csv, Cell(b"aaa")); // Yields Cell('aaa')
     assert_csv!(csv, position == 4); // Position after 'aaa,' (start of 'b')
     assert_csv!(csv, Cell(b"bbb")); // Yields Cell('bbb')
     assert_csv!(csv, position == 7); // Position after 'bbb' (start of '\r')
     assert_csv!(csv, LineEnd); // Yields LineEnd
-    assert_csv!(csv, position == 8); // Position after '\n' (start of '1')
+    assert_csv!(csv, position == 9); // Position after '\n' (start of '1')
     assert_csv!(csv, Cell(b"100")); // Yields Cell('100')
-    assert_csv!(csv, position == 12); // Position after '100,' (start of '2')
+    assert_csv!(csv, position == 13); // Position after '100,' (start of '2')
     assert_csv!(csv, Cell(b"200")); // Yields Cell('200')
-    assert_csv!(csv, position == 15); // Position after '200' (end of buffer)
+    assert_csv!(csv, position == 16); // Position after '200' (end of buffer)
+    assert_csv!(csv, LineEnd); // Yields LineEnd
+    assert_csv!(csv, position == 18); // Position after '\n' (end of buffer)
     assert_csv!(csv, EOF); // End of iteration
-    assert_csv!(csv, position == data.len()); // Position at the end
+    assert_csv!(csv, position == 18); // Position at the end
+
+    // empty cells at line end without trailing newline
+    let mut csv = Csv::new(b"aaa,\n100,");
+    assert_csv!(csv, position == 0);
+    assert_csv!(csv, Cell(b"aaa"));
+    assert_csv!(csv, position == 4);
+    assert_csv!(csv, Cell(b""));
+    assert_csv!(csv, position == 4);
+    assert_csv!(csv, LineEnd);
+    assert_csv!(csv, position == 5);
+    assert_csv!(csv, Cell(b"100"));
+    assert_csv!(csv, position == 9);
+    assert_csv!(csv, Cell(b""));
+    assert_csv!(csv, position == 9);
+    assert_csv!(csv, EOF);
+    assert_csv!(csv, position == 9);
 }
 
 #[test]
