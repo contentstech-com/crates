@@ -51,7 +51,7 @@
 //! use lazycsv::{Csv, CsvIterItem};
 //!
 //! // Iterating over rows
-//! let csv = Csv::new(b"a,b,c\n1,2,3");
+//! let csv = Csv::new(b"a,b,c\n1,2,3\n");
 //! for row in csv.into_rows() {
 //!     let [first, second, third] = row?;
 //!     println!(
@@ -63,7 +63,7 @@
 //! }
 //!
 //! // Or if you want to avoid buffering:
-//! let csv2 = Csv::new(b"a,b,c\n1,2,3");
+//! let csv2 = Csv::new(b"a,b,c\n1,2,3\n");
 //! for item in csv2 {
 //!     if let CsvIterItem::Cell(cell) = item {
 //!         println!("{}", cell.try_as_str()?);
@@ -123,7 +123,7 @@ impl<'a> Csv<'a> {
     /// ```
     /// use lazycsv::Csv;
     ///
-    /// let csv = Csv::new(b"a,b,c\n1,2,3");
+    /// let csv = Csv::new(b"a,b,c\n1,2,3\n");
     /// ```
     pub fn new(buf: &'a [u8]) -> Csv<'a> {
         Csv {
@@ -160,7 +160,7 @@ impl<'a> Csv<'a> {
     /// # {
     /// use lazycsv::Csv;
     ///
-    /// for row in Csv::new(b"a,b,c\n1,2,3").into_rows() {
+    /// for row in Csv::new(b"a,b,c\n1,2,3\n").into_rows() {
     ///     let [first, second, third] = row?;
     ///     println!("{}, {}, {}", first.try_as_str()?, second.try_as_str()?, third.try_as_str()?);
     /// }
@@ -180,7 +180,7 @@ impl<'a> Csv<'a> {
     /// # {
     /// use lazycsv::Csv;
     ///
-    /// for row in Csv::new(b"a,b,c\n1,2,3").into_rows_with_range() {
+    /// for row in Csv::new(b"a,b,c\n1,2,3\n").into_rows_with_range() {
     ///     let ([first, second, third], range) = row?;
     ///     println!(
     ///         "{}, {}, {} (bytes {}..{})",
@@ -211,7 +211,7 @@ impl<'a> Csv<'a> {
     /// # let _: Option<()> = (|| {
     /// use lazycsv::{Csv, CsvIterItem};
     ///
-    /// let mut csv = Csv::new(b"a,b,c\n1,2,3\n4,5,6");
+    /// let mut csv = Csv::new(b"a,b,c\n1,2,3\n4,5,6\n");
     /// let CsvIterItem::Cell(cell) = csv.skip_rows(2).next()? else {
     ///     panic!("Expected a cell");
     /// };
@@ -383,7 +383,7 @@ impl<const COLS: usize> CsvRowIter<'_, COLS> {
     /// # let _: Option<()> = (|| {
     /// use lazycsv::Csv;
     ///
-    /// let mut rows = Csv::new(b"a,b,c\n1,2,3\n4,5,6").into_rows();
+    /// let mut rows = Csv::new(b"a,b,c\n1,2,3\n4,5,6\n").into_rows();
     /// let [four, five, six] = rows.skip(2).next()?.ok()? else {
     ///     panic!("Expected a row");
     /// };
