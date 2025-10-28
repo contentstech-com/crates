@@ -93,7 +93,7 @@
 #![no_std]
 #![deny(missing_docs)]
 
-use core::{hash::Hash, mem::MaybeUninit};
+use core::{hash::Hash, mem::MaybeUninit, ops::Range};
 
 #[cfg(feature = "alloc")]
 extern crate alloc;
@@ -169,6 +169,35 @@ impl<'a> Csv<'a> {
     /// ```
     pub fn into_rows<const COLS: usize>(self) -> CsvRowIter<'a, COLS> {
         CsvRowIter { csv: self }
+    }
+
+    /// Create a wrapper iterator that buffers the cells per row, along with byte position range.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # #[cfg(feature = "alloc")]
+    /// # {
+    /// use lazycsv::Csv;
+    ///
+    /// for row in Csv::new(b"a,b,c\n1,2,3").into_rows_with_range() {
+    ///     let ([first, second, third], range) = row?;
+    ///     println!(
+    ///         "{}, {}, {} (bytes {}..{})",
+    ///         first.try_as_str()?,
+    ///         second.try_as_str()?,
+    ///         third.try_as_str()?,
+    ///         range.start,
+    ///         range.end
+    ///     );
+    /// }
+    /// # }
+    /// # Ok::<(), Box<dyn std::error::Error>>(())
+    /// ```
+    pub fn into_rows_with_range<const COLS: usize>(self) -> CsvRowWithRangeIter<'a, COLS> {
+        CsvRowWithRangeIter {
+            row_iter: self.into_rows(),
+        }
     }
 
     /// Skips the first `n` rows.
@@ -397,6 +426,57 @@ impl<'a, const COLS: usize> Iterator for CsvRowIter<'a, COLS> {
         }
 
         Some(Ok(arr.map(|mem| unsafe { mem.assume_init() })))
+    }
+}
+
+/// An iterator that buffers and yields rows of cells along with byte position range.
+///
+/// Can be created by calling [`Csv::into_rows_with_range()`].
+///
+/// ### `const` Parameters
+///
+/// - `COLS`: The number of columns in the CSV.
+#[derive(Copy, Clone, Eq, PartialEq, Hash, Debug)]
+pub struct CsvRowWithRangeIter<'a, const COLS: usize> {
+    row_iter: CsvRowIter<'a, COLS>,
+}
+
+impl<const COLS: usize> CsvRowWithRangeIter<'_, COLS> {
+    /// Skips the first `n` rows.
+    ///
+    /// Using this function is more efficient than calling [`Iterator::skip()`],
+    /// as it only looks for newline characters instead of trying to recognize cells.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # let _: Option<()> = (|| {
+    /// use lazycsv::Csv;
+    ///
+    /// let mut rows = Csv::new(b"a,b,c\n1,2,3\n4,5,6\n").into_rows_with_range();
+    /// let ([four, five, six], range) = rows.skip(2).next()?.ok()? else {
+    ///     panic!("Expected a row");
+    /// };
+    /// assert_eq!([four.buf, five.buf, six.buf], [b"4", b"5", b"6"]);
+    /// assert_eq!(range, 12..18);
+    /// # None
+    /// # })();
+    /// ```
+    pub fn skip(self, n: usize) -> Self {
+        Self {
+            row_iter: self.row_iter.skip(n),
+        }
+    }
+}
+
+impl<'a, const COLS: usize> Iterator for CsvRowWithRangeIter<'a, COLS> {
+    type Item = Result<([Cell<'a>; COLS], Range<usize>), RowIterError>;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        let start = self.row_iter.csv.position();
+        let next = self.row_iter.next();
+        let end = self.row_iter.csv.position();
+        next.map(|res| res.map(|arr| (arr, start..end)))
     }
 }
 

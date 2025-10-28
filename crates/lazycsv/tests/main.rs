@@ -78,3 +78,31 @@ fn position() {
     assert!(csv.next().is_none()); // End of iteration
     assert_eq!(csv.position(), data.len()); // Position at the end
 }
+
+#[cfg(feature = "alloc")]
+#[test]
+fn into_rows_with_range() {
+    let data = b"a,b,c\n1,2,3\n4,5,6\n";
+    let csv = Csv::new(data);
+    let mut iter = csv.into_rows_with_range();
+
+    let ([a, b, c], range) = iter.next().unwrap().unwrap();
+    assert_eq!(a.try_as_str().unwrap(), "a");
+    assert_eq!(b.try_as_str().unwrap(), "b");
+    assert_eq!(c.try_as_str().unwrap(), "c");
+    assert_eq!(range, 0..6); // "a,b,c\n"
+
+    let ([a, b, c], range) = iter.next().unwrap().unwrap();
+    assert_eq!(a.try_as_str().unwrap(), "1");
+    assert_eq!(b.try_as_str().unwrap(), "2");
+    assert_eq!(c.try_as_str().unwrap(), "3");
+    assert_eq!(range, 6..12); // "1,2,3\n"
+
+    let ([a, b, c], range) = iter.next().unwrap().unwrap();
+    assert_eq!(a.try_as_str().unwrap(), "4");
+    assert_eq!(b.try_as_str().unwrap(), "5");
+    assert_eq!(c.try_as_str().unwrap(), "6");
+    assert_eq!(range, 12..18); // "4,5,6\n"
+
+    assert!(iter.next().is_none());
+}
