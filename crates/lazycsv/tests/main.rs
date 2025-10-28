@@ -1,6 +1,4 @@
-use lazycsv::Csv;
-#[cfg(feature = "alloc")]
-use lazycsv::{Cell, CsvIterItem};
+use lazycsv::{Cell, Csv, CsvIterItem};
 
 macro_rules! assert_csv {
     ($csv:expr, Cell($buf:expr)) => {
@@ -61,7 +59,6 @@ fn basic() {
     assert_csv!(csv, EOF);
 }
 
-#[cfg(feature = "alloc")]
 #[test]
 fn no_trailing_newline() {
     let mut csv = Csv::new(b"a,b,c\n1,2,3\n4,5,6");
@@ -109,7 +106,6 @@ fn position() {
     assert_csv!(csv, position == data.len()); // Position at the end
 }
 
-#[cfg(feature = "alloc")]
 #[test]
 fn into_rows() {
     let mut iter = Csv::new(b"a,b,c\n1,2,3\n4,5,6\n").into_rows();
@@ -132,7 +128,6 @@ fn into_rows() {
     assert!(iter.next().is_none());
 }
 
-#[cfg(feature = "alloc")]
 #[test]
 fn into_rows_no_trailing_newline() {
     let mut iter = Csv::new(b"a,b,c\n1,2,3\n4,5,6").into_rows();
@@ -155,7 +150,6 @@ fn into_rows_no_trailing_newline() {
     assert!(iter.next().is_none());
 }
 
-#[cfg(feature = "alloc")]
 #[test]
 fn into_rows_malformed() {
     let mut iter = Csv::new(b"a,b,c\n1,2").into_rows();
@@ -168,7 +162,6 @@ fn into_rows_malformed() {
     assert!(iter.next().unwrap().is_err());
 }
 
-#[cfg(feature = "alloc")]
 #[test]
 fn into_rows_with_range() {
     let mut iter = Csv::new(b"a,b,c\n1,2,3\n4,5,6\n").into_rows_with_range();
@@ -194,7 +187,6 @@ fn into_rows_with_range() {
     assert!(iter.next().is_none());
 }
 
-#[cfg(feature = "alloc")]
 #[test]
 fn into_rows_with_range_no_trailing_newline() {
     let mut iter = Csv::new(b"a,b,c\n1,2,3\n4,5,6").into_rows_with_range();
