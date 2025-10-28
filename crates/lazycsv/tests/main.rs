@@ -81,6 +81,31 @@ fn position() {
 
 #[cfg(feature = "alloc")]
 #[test]
+fn into_rows() {
+    let data = b"a,b,c\n1,2,3\n4,5,6\n";
+    let csv = Csv::new(data);
+    let mut iter = csv.into_rows();
+
+    let [a, b, c] = iter.next().unwrap().unwrap();
+    assert_eq!(a.try_as_str().unwrap(), "a");
+    assert_eq!(b.try_as_str().unwrap(), "b");
+    assert_eq!(c.try_as_str().unwrap(), "c");
+
+    let [a, b, c] = iter.next().unwrap().unwrap();
+    assert_eq!(a.try_as_str().unwrap(), "1");
+    assert_eq!(b.try_as_str().unwrap(), "2");
+    assert_eq!(c.try_as_str().unwrap(), "3");
+
+    let [a, b, c] = iter.next().unwrap().unwrap();
+    assert_eq!(a.try_as_str().unwrap(), "4");
+    assert_eq!(b.try_as_str().unwrap(), "5");
+    assert_eq!(c.try_as_str().unwrap(), "6");
+
+    assert!(iter.next().is_none());
+}
+
+#[cfg(feature = "alloc")]
+#[test]
 fn into_rows_with_range() {
     let data = b"a,b,c\n1,2,3\n4,5,6\n";
     let csv = Csv::new(data);
