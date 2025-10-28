@@ -411,17 +411,18 @@ impl<'a, const COLS: usize> Iterator for CsvRowIter<'a, COLS> {
         let mut arr = [const { MaybeUninit::uninit() }; COLS];
         for i in 0..COLS {
             match self.csv.next() {
+                // If we reach EOF before reading any cells, there are no more rows available.
+                None if i == 0 => return None,
                 Some(CsvIterItem::Cell(cell)) => {
                     // SAFETY: we have to initialize the cell beforehand
                     unsafe { arr.get_unchecked_mut(i).write(cell) };
                 }
-                Some(CsvIterItem::LineEnd) => {
+                None | Some(CsvIterItem::LineEnd) => {
                     return Some(Err(RowIterError::ColumnCountSmallerThanExpected {
                         expected: COLS,
-                        actual: i - 1,
+                        actual: i,
                     }));
                 }
-                None => return None,
             }
         }
 
