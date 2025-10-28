@@ -63,6 +63,25 @@ fn basic() {
 
 #[cfg(feature = "alloc")]
 #[test]
+fn no_trailing_newline() {
+    let mut csv = Csv::new(b"a,b,c\n1,2,3\n4,5,6");
+
+    assert_csv!(csv, Cell(b"a"));
+    assert_csv!(csv, Cell(b"b"));
+    assert_csv!(csv, Cell(b"c"));
+    assert_csv!(csv, LineEnd);
+    assert_csv!(csv, Cell(b"1"));
+    assert_csv!(csv, Cell(b"2"));
+    assert_csv!(csv, Cell(b"3"));
+    assert_csv!(csv, LineEnd);
+    assert_csv!(csv, Cell(b"4"));
+    assert_csv!(csv, Cell(b"5"));
+    assert_csv!(csv, Cell(b"6"));
+    assert_csv!(csv, EOF);
+}
+
+#[cfg(feature = "alloc")]
+#[test]
 fn dequote() {
     let cell = Cell {
         buf: br#""Hi ""Quote"" yo""#,
@@ -115,6 +134,42 @@ fn into_rows() {
 
 #[cfg(feature = "alloc")]
 #[test]
+fn into_rows_no_trailing_newline() {
+    let mut iter = Csv::new(b"a,b,c\n1,2,3\n4,5,6").into_rows();
+
+    let [a, b, c] = iter.next().unwrap().unwrap();
+    assert_eq_cell!(a, b"a");
+    assert_eq_cell!(b, b"b");
+    assert_eq_cell!(c, b"c");
+
+    let [a, b, c] = iter.next().unwrap().unwrap();
+    assert_eq_cell!(a, b"1");
+    assert_eq_cell!(b, b"2");
+    assert_eq_cell!(c, b"3");
+
+    let [a, b, c] = iter.next().unwrap().unwrap();
+    assert_eq_cell!(a, b"4");
+    assert_eq_cell!(b, b"5");
+    assert_eq_cell!(c, b"6");
+
+    assert!(iter.next().is_none());
+}
+
+#[cfg(feature = "alloc")]
+#[test]
+fn into_rows_malformed() {
+    let mut iter = Csv::new(b"a,b,c\n1,2").into_rows();
+
+    let [a, b, c] = iter.next().unwrap().unwrap();
+    assert_eq_cell!(a, b"a");
+    assert_eq_cell!(b, b"b");
+    assert_eq_cell!(c, b"c");
+
+    assert!(iter.next().unwrap().is_err());
+}
+
+#[cfg(feature = "alloc")]
+#[test]
 fn into_rows_with_range() {
     let mut iter = Csv::new(b"a,b,c\n1,2,3\n4,5,6\n").into_rows_with_range();
 
@@ -135,6 +190,32 @@ fn into_rows_with_range() {
     assert_eq_cell!(b, b"5");
     assert_eq_cell!(c, b"6");
     assert_eq!(range, 12..18); // "4,5,6\n"
+
+    assert!(iter.next().is_none());
+}
+
+#[cfg(feature = "alloc")]
+#[test]
+fn into_rows_with_range_no_trailing_newline() {
+    let mut iter = Csv::new(b"a,b,c\n1,2,3\n4,5,6").into_rows_with_range();
+
+    let ([a, b, c], range) = iter.next().unwrap().unwrap();
+    assert_eq_cell!(a, b"a");
+    assert_eq_cell!(b, b"b");
+    assert_eq_cell!(c, b"c");
+    assert_eq!(range, 0..6); // "a,b,c\n"
+
+    let ([a, b, c], range) = iter.next().unwrap().unwrap();
+    assert_eq_cell!(a, b"1");
+    assert_eq_cell!(b, b"2");
+    assert_eq_cell!(c, b"3");
+    assert_eq!(range, 6..12); // "1,2,3\n"
+
+    let ([a, b, c], range) = iter.next().unwrap().unwrap();
+    assert_eq_cell!(a, b"4");
+    assert_eq_cell!(b, b"5");
+    assert_eq_cell!(c, b"6");
+    assert_eq!(range, 12..17); // "4,5,6"
 
     assert!(iter.next().is_none());
 }
