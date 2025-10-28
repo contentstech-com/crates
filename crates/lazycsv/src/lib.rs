@@ -327,7 +327,13 @@ impl<'a> Iterator for Csv<'a> {
             let Some(index_relative) = memchr3(self.separator, b'\n', b'"', &self.buf[cursor..])
             else {
                 self.state = IterState::Done;
-                return None;
+                return if start < self.buf.len() {
+                    Some(CsvIterItem::Cell(Cell {
+                        buf: &self.buf[start..],
+                    }))
+                } else {
+                    None
+                };
             };
             let index = index_relative + cursor;
 
@@ -419,13 +425,16 @@ impl<'a, const COLS: usize> Iterator for CsvRowIter<'a, COLS> {
             }
         }
 
-        if !matches!(self.csv.next(), Some(CsvIterItem::LineEnd)) {
-            return Some(Err(RowIterError::ColumnCountLargerThanExpected {
+        // After reading COLS cells, the next item must be a line ending or EOF.
+        // EOF in this context is treated as a valid input to gracefully handle
+        // files without a trailing newline.
+        if let None | Some(CsvIterItem::LineEnd) = self.csv.next() {
+            Some(Ok(arr.map(|mem| unsafe { mem.assume_init() })))
+        } else {
+            Some(Err(RowIterError::ColumnCountLargerThanExpected {
                 expected: COLS,
-            }));
+            }))
         }
-
-        Some(Ok(arr.map(|mem| unsafe { mem.assume_init() })))
     }
 }
 
