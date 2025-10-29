@@ -1,6 +1,6 @@
 [package]
 name = "lazycsv"
-version = "0.3.0"
+version = "0.3.1"
 description = "Vectorized, lazy-decoding, zero-copy CSV parser."
 keywords = ["csv", "simd", "zero-copy", "lazy", "parser"]
 categories = ["no-std", "no-std::no-alloc", "parsing"]
