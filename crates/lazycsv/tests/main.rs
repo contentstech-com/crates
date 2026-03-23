@@ -61,6 +61,27 @@ fn basic() {
 
 #[cfg(feature = "alloc")]
 #[test]
+fn unclosed_quotes() {
+    let mut csv = Csv::new(
+        br#"cell 1,cell 2,cell 3,"cell 4
+Hello, world!","Hi ""Quote""","""HELLO""","""name
+"#,
+    );
+
+    assert_csv!(csv, Cell(br#"cell 1"#, r#"cell 1"#));
+    assert_csv!(csv, Cell(br#"cell 2"#, r#"cell 2"#));
+    assert_csv!(csv, Cell(br#"cell 3"#, r#"cell 3"#));
+    assert_csv!(csv, Cell(br#""cell 4
+Hello, world!""#, r#"cell 4
+Hello, world!"#));
+    assert_csv!(csv, Cell(br#""Hi ""Quote""""#, r#"Hi "Quote""#));
+    assert_csv!(csv, Cell(br#""""HELLO""""#, r#""HELLO""#));
+    // TODO: Error should be returned in here
+    assert_csv!(csv, EOF);
+}
+
+#[cfg(feature = "alloc")]
+#[test]
 fn dequote() {
     let cell = Cell {
         buf: br#""Hi ""Quote"" yo""#,
